@@ -83,14 +83,63 @@ test('resolvePlacement returns a miss when blocks do not overlap', () => {
   assert.deepEqual(result, { type: 'miss' });
 });
 
-test('GameEngine stacks successful drops, ends on a miss, and supports one continue', () => {
-  const game = new GameEngine({ bestScore: 4 });
+test('GameEngine adds escalating streak bonuses for consecutive perfect drops', () => {
+  const game = new GameEngine({ bestScore: 0, bestStreak: 0 });
   game.startRun();
 
   game.currentBlock.x = 50;
   let outcome = game.dropCurrent();
   assert.equal(outcome.type, 'place');
-  assert.equal(game.score, 2);
+  assert.equal(game.score, 3);
+  assert.equal(game.perfectStreak, 1);
+  assert.equal(game.longestStreak, 1);
+
+  game.update(0.1);
+  game.currentBlock.x = 50;
+  outcome = game.dropCurrent();
+  assert.equal(outcome.type, 'place');
+  assert.equal(game.score, 7);
+  assert.equal(game.perfectStreak, 2);
+  assert.equal(game.longestStreak, 2);
+
+  game.update(0.1);
+  game.currentBlock.x = 50;
+  outcome = game.dropCurrent();
+  assert.equal(outcome.type, 'place');
+  assert.equal(game.score, 12);
+  assert.equal(game.perfectStreak, 3);
+  assert.equal(game.longestStreak, 3);
+});
+
+test('GameEngine resets the active streak on a non-perfect drop but keeps the longest streak', () => {
+  const game = new GameEngine({ bestScore: 0, bestStreak: 0 });
+  game.startRun();
+
+  game.currentBlock.x = 50;
+  game.dropCurrent();
+  game.update(0.1);
+  game.currentBlock.x = 50;
+  game.dropCurrent();
+
+  game.update(0.1);
+  game.currentBlock.x = 54;
+  const outcome = game.dropCurrent();
+
+  assert.equal(outcome.type, 'place');
+  assert.equal(outcome.perfect, false);
+  assert.equal(game.score, 8);
+  assert.equal(game.perfectStreak, 0);
+  assert.equal(game.longestStreak, 2);
+});
+
+test('GameEngine stacks successful drops, ends on a miss, and supports one continue', () => {
+  const game = new GameEngine({ bestScore: 4, bestStreak: 3 });
+  game.startRun();
+
+  game.currentBlock.x = 50;
+  let outcome = game.dropCurrent();
+  assert.equal(outcome.type, 'place');
+  assert.equal(game.score, 3);
   assert.equal(game.bestScore, 4);
   assert.equal(game.blocks.at(-1).width, game.initialBlockWidth);
 
@@ -101,6 +150,7 @@ test('GameEngine stacks successful drops, ends on a miss, and supports one conti
   assert.equal(game.state, 'gameover');
   assert.equal(game.canContinue(), true);
   assert.equal(game.bestScore, 4);
+  assert.equal(game.bestStreak, 3);
 
   assert.equal(game.continueRun(), true);
   assert.equal(game.state, 'playing');

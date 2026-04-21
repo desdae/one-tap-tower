@@ -70,12 +70,13 @@ export function resolvePlacement(previousBlock, currentBlock, perfectTolerance) 
 }
 
 export class GameEngine {
-  constructor({ bestScore = 0 } = {}) {
+  constructor({ bestScore = 0, bestStreak = 0 } = {}) {
     this.worldWidth = WORLD_WIDTH;
     this.blockHeight = BLOCK_HEIGHT;
     this.initialBlockWidth = INITIAL_BLOCK_WIDTH;
     this.visibleRows = VISIBLE_ROWS;
     this.bestScore = bestScore;
+    this.bestStreak = bestStreak;
     this.state = 'menu';
 
     this.blocks = [];
@@ -84,6 +85,8 @@ export class GameEngine {
     this.events = [];
 
     this.score = 0;
+    this.perfectStreak = 0;
+    this.longestStreak = 0;
     this.cameraY = 0;
     this.spawnSide = -1;
     this.continueUsed = false;
@@ -100,6 +103,8 @@ export class GameEngine {
     this.events.length = 0;
 
     this.score = 0;
+    this.perfectStreak = 0;
+    this.longestStreak = 0;
     this.state = 'playing';
     this.cameraY = 0;
     this.shake = 0;
@@ -167,9 +172,16 @@ export class GameEngine {
       this.state = 'gameover';
       this.shake = 1.1;
       this.inputCooldown = 0.12;
-      this.updateBestScore();
+      this.perfectStreak = 0;
+      this.updateRecords();
       this.events.push({ type: 'miss' });
-      this.events.push({ type: 'gameover', score: this.score, bestScore: this.bestScore });
+      this.events.push({
+        type: 'gameover',
+        score: this.score,
+        bestScore: this.bestScore,
+        longestStreak: this.longestStreak,
+        bestStreak: this.bestStreak
+      });
       return result;
     }
 
@@ -181,8 +193,20 @@ export class GameEngine {
     };
 
     this.blocks.push(placedBlock);
-    this.score += 1 + result.bonus;
-    this.updateBestScore();
+
+    const previousStreak = this.perfectStreak;
+    let pointsAwarded = 1;
+
+    if (result.perfect) {
+      this.perfectStreak += 1;
+      this.longestStreak = Math.max(this.longestStreak, this.perfectStreak);
+      pointsAwarded = 2 + this.perfectStreak;
+    } else {
+      this.perfectStreak = 0;
+    }
+
+    this.score += pointsAwarded;
+    this.updateRecords();
 
     if (result.cutPiece) {
       this.pushFallingPiece(
@@ -197,17 +221,23 @@ export class GameEngine {
 
     this.effects.push({
       type: result.perfect ? 'perfect' : 'stack',
-      text: result.perfect ? 'Perfect +2' : '+1',
+      text: result.perfect ? `Perfect +${pointsAwarded}` : `+${pointsAwarded}`,
       x: placedBlock.x,
       y: placedBlock.y + this.blockHeight * 0.4,
       age: 0,
-      ttl: result.perfect ? 0.7 : 0.45
+      ttl: result.perfect ? 0.9 : 0.45,
+      streak: this.perfectStreak,
+      pointsAwarded
     });
 
     this.events.push({
       type: 'place',
       perfect: result.perfect,
-      roughCut: Boolean(result.cutPiece)
+      roughCut: Boolean(result.cutPiece),
+      streak: this.perfectStreak,
+      streakBroken: !result.perfect && previousStreak > 0,
+      longestStreak: this.longestStreak,
+      pointsAwarded
     });
 
     this.inputCooldown = 0.08;
@@ -241,9 +271,12 @@ export class GameEngine {
     return true;
   }
 
-  updateBestScore() {
+  updateRecords() {
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
+    }
+    if (this.longestStreak > this.bestStreak) {
+      this.bestStreak = this.longestStreak;
     }
   }
 

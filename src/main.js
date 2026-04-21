@@ -10,7 +10,10 @@ import { createUI } from './ui.js';
 
 const storage = createStorage();
 const platform = createPlatform();
-const game = new GameEngine({ bestScore: storage.getBestScore() });
+const game = new GameEngine({
+  bestScore: storage.getBestScore(),
+  bestStreak: storage.getBestStreak()
+});
 const renderer = new Renderer(document.querySelector('#game-canvas'), game);
 const ui = createUI();
 const audio = createAudioController({
@@ -31,17 +34,19 @@ function resize() {
 function syncHud() {
   ui.setHud({
     score: game.score,
-    bestScore: game.bestScore
+    bestScore: game.bestScore,
+    streak: game.perfectStreak
   });
 }
 
-function persistBestScore() {
+function persistRecords() {
   storage.setBestScore(game.bestScore);
+  storage.setBestStreak(game.bestStreak);
 }
 
 function beginRun() {
   game.startRun();
-  persistBestScore();
+  persistRecords();
   syncHud();
   ui.showGameplay();
 }
@@ -54,7 +59,7 @@ function handleGameplayTap() {
   audio.unlock();
   const result = game.dropCurrent();
   if (result) {
-    persistBestScore();
+    persistRecords();
     syncHud();
   }
 }
@@ -67,10 +72,19 @@ function processEvents() {
 
     if (event.type === 'place') {
       if (event.perfect) {
-        audio.play('perfect');
-        ui.toast('Perfect');
+        audio.play(event.streak >= 3 ? 'streak' : 'perfect');
+        if (event.streak >= 5) {
+          ui.toast(`Legendary x${event.streak}`);
+        } else if (event.streak >= 3) {
+          ui.toast(`Amazing x${event.streak}`);
+        } else {
+          ui.toast('Perfect');
+        }
       } else {
         audio.play(event.roughCut ? 'cut' : 'place');
+        if (event.streakBroken) {
+          ui.toast(`Streak banked x${event.longestStreak}`);
+        }
       }
     } else if (event.type === 'miss') {
       audio.play('miss');
@@ -81,6 +95,8 @@ function processEvents() {
       ui.showGameOver({
         score: event.score,
         bestScore: event.bestScore,
+        longestStreak: event.longestStreak,
+        bestStreak: event.bestStreak,
         canContinue: monetization.canOfferContinue(game)
       });
     }
@@ -119,6 +135,7 @@ ui.bind({
 
     if (game.continueRun()) {
       ui.showGameplay();
+      persistRecords();
       syncHud();
     }
   },
@@ -173,7 +190,7 @@ platform.bindLifecycle({
 
 ui.setSoundEnabled(audio.isEnabled());
 ui.setRemoveAdsOwned(monetization.hasRemoveAds());
-ui.showMenu(game.bestScore);
+ui.showMenu(game.bestScore, game.bestStreak);
 syncHud();
 resize();
 window.addEventListener('resize', resize);

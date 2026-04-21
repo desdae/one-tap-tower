@@ -60,6 +60,13 @@ export function createAudioController({ enabled, onToggle }) {
       return;
     }
 
+    if (kind === 'streak') {
+      createTone(ctx, 620, 0.08, 'triangle', 0.045, 920);
+      createTone(ctx, 860, 0.11, 'sine', 0.03, 1260);
+      createTone(ctx, 1080, 0.14, 'triangle', 0.022, 1520);
+      return;
+    }
+
     if (kind === 'place') {
       createTone(ctx, 350, 0.08, 'triangle', 0.04, 420);
       return;

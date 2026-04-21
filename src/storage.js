@@ -1,5 +1,6 @@
 const KEYS = {
   bestScore: 'oneTapTower.bestScore',
+  bestStreak: 'oneTapTower.bestStreak',
   soundEnabled: 'oneTapTower.soundEnabled',
   removeAds: 'oneTapTower.removeAds'
 };
@@ -28,6 +29,12 @@ export function createStorage() {
     },
     setBestScore(value) {
       safeWrite(KEYS.bestScore, String(Math.max(0, value)));
+    },
+    getBestStreak() {
+      return Number.parseInt(safeRead(KEYS.bestStreak, '0'), 10) || 0;
+    },
+    setBestStreak(value) {
+      safeWrite(KEYS.bestStreak, String(Math.max(0, value)));
     },
     getSoundEnabled() {
       return safeRead(KEYS.soundEnabled, '1') === '1';

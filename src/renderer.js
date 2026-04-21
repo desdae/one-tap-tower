@@ -84,6 +84,8 @@ export class Renderer {
     this.drawShadowGround(shakeY);
     this.drawBlocks(shakeX, shakeY);
     this.drawCurrentBlock(shakeX, shakeY);
+    this.drawStreakAura(shakeX, shakeY);
+    this.drawStreakBanner();
     this.drawEffects(shakeX, shakeY);
   }
 
@@ -140,6 +142,25 @@ export class Renderer {
     const block = this.game.currentBlock;
     const x = this.worldToScreenX(block.x - block.width * 0.5, shakeX);
     const y = this.worldToScreenY(block.y, shakeY);
+
+    if (this.game.perfectStreak > 0) {
+      const streakGlow = Math.min(1, this.game.perfectStreak / 6);
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 238, 170, ${(0.08 + streakGlow * 0.12).toFixed(3)})`;
+      ctx.shadowColor = 'rgba(255, 224, 130, 0.42)';
+      ctx.shadowBlur = 16 + streakGlow * 24;
+      roundedRect(
+        ctx,
+        x - 3,
+        y - 3,
+        block.width * this.scale + 6,
+        this.game.blockHeight * this.scale + 6,
+        this.game.blockHeight * this.scale * 0.28
+      );
+      ctx.fill();
+      ctx.restore();
+    }
+
     drawBlock(
       ctx,
       x,
@@ -150,22 +171,100 @@ export class Renderer {
     );
   }
 
+  drawStreakAura(shakeX, shakeY) {
+    if (this.game.perfectStreak < 2) {
+      return;
+    }
+
+    const { ctx } = this;
+    const top = this.game.getTopBlock();
+    const streakPower = Math.min(1, this.game.perfectStreak / 7);
+    const centerX = this.worldToScreenX(top.x, shakeX);
+    const centerY = this.worldToScreenY(top.y, shakeY) + this.game.blockHeight * this.scale * 0.45;
+    const baseRadius = Math.max(20, top.width * this.scale * 0.9);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = `rgba(255, 226, 156, ${(0.12 + streakPower * 0.16).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, baseRadius + Math.sin(this.game.elapsed * 5) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (this.game.perfectStreak >= 4) {
+      ctx.strokeStyle = `rgba(170, 232, 255, ${(0.08 + streakPower * 0.12).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, baseRadius + 12 + Math.cos(this.game.elapsed * 4.2) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  drawStreakBanner() {
+    if (this.game.perfectStreak < 2) {
+      return;
+    }
+
+    const { ctx } = this;
+    const streakPower = Math.min(1, this.game.perfectStreak / 7);
+    const centerX = this.width * 0.5;
+    const y = 126;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = `700 ${18 + Math.round(streakPower * 6)}px system-ui, sans-serif`;
+    ctx.fillStyle = `rgba(255, 247, 213, ${(0.74 + streakPower * 0.18).toFixed(3)})`;
+    ctx.shadowColor = 'rgba(255, 208, 122, 0.38)';
+    ctx.shadowBlur = 18;
+    ctx.fillText(`STREAK x${this.game.perfectStreak}`, centerX, y);
+
+    ctx.shadowBlur = 0;
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillStyle = 'rgba(209, 235, 255, 0.78)';
+    ctx.fillText(`Next perfect +${this.game.perfectStreak + 3}`, centerX, y + 18);
+    ctx.restore();
+  }
+
   drawEffects(shakeX, shakeY) {
     const { ctx } = this;
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '700 16px system-ui, sans-serif';
 
     for (let i = 0; i < this.game.effects.length; i += 1) {
       const effect = this.game.effects[i];
       const alpha = 1 - effect.age / effect.ttl;
+      const x = this.worldToScreenX(effect.x, shakeX);
+      const y = this.worldToScreenY(effect.y, shakeY) - 12;
       ctx.globalAlpha = Math.max(0, alpha);
-      ctx.fillStyle = effect.type === 'perfect' ? '#fff0a6' : '#ffffff';
-      ctx.fillText(
-        effect.text,
-        this.worldToScreenX(effect.x, shakeX),
-        this.worldToScreenY(effect.y, shakeY) - 12
-      );
+
+      if (effect.type === 'perfect') {
+        const burst = Math.min(1, (effect.streak || 1) / 6);
+        const radius = 12 + (effect.streak || 1) * 5 + effect.age * 20;
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        ctx.strokeStyle = `rgba(255, 228, 162, ${(alpha * (0.32 + burst * 0.22)).toFixed(3)})`;
+        ctx.lineWidth = 2 + burst * 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y + 10, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if ((effect.streak || 1) >= 3) {
+          ctx.strokeStyle = `rgba(169, 233, 255, ${(alpha * (0.16 + burst * 0.18)).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(x, y + 10, radius + 10, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.font = `700 ${18 + Math.min(10, (effect.streak || 1) * 2)}px system-ui, sans-serif`;
+        ctx.fillStyle = (effect.streak || 1) >= 4 ? '#e8fbff' : '#fff0a6';
+      } else {
+        ctx.font = '700 16px system-ui, sans-serif';
+        ctx.fillStyle = '#ffffff';
+      }
+
+      ctx.fillText(effect.text, x, y);
     }
 
     ctx.restore();
