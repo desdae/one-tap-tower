@@ -1,0 +1,6 @@
+{
+  "appId": "com.onetaptower.game",
+  "appName": "One Tap Tower",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
