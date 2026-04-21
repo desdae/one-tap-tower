@@ -1,7 +1,7 @@
 :root {
   color-scheme: only light;
   font-family: system-ui, sans-serif;
-  background: #103c66;
+  background: #112947;
   color: #ffffff;
 }
 
@@ -20,6 +20,7 @@ body {
 
 body {
   min-height: 100vh;
+  background: #112947;
 }
 
 button {
@@ -31,9 +32,7 @@ button {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 20% 15%, rgba(255, 242, 196, 0.22), transparent 28%),
-    linear-gradient(180deg, #103c66 0%, #266da8 55%, #f4d8a8 100%);
+  background: linear-gradient(180deg, #112947 0%, #1f466e 55%, #5684a6 100%);
 }
 
 #game-canvas {
@@ -63,7 +62,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  text-shadow: 0 2px 10px rgba(11, 25, 43, 0.22);
+  text-shadow: 0 3px 16px rgba(7, 16, 29, 0.42);
 }
 
 .hud__metric--right {
@@ -101,9 +100,9 @@ button {
 .chip {
   padding: 0.7rem 1rem;
   color: #ffffff;
-  background: rgba(17, 32, 51, 0.24);
+  background: rgba(12, 24, 40, 0.34);
   backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px rgba(10, 21, 36, 0.12);
+  box-shadow: 0 12px 28px rgba(7, 15, 25, 0.2);
 }
 
 .screen {
@@ -111,7 +110,7 @@ button {
   align-items: center;
   justify-content: center;
   padding: max(24px, env(safe-area-inset-top, 0)) 20px max(24px, env(safe-area-inset-bottom, 0));
-  background: linear-gradient(180deg, rgba(16, 32, 52, 0.08), rgba(16, 32, 52, 0.2));
+  background: linear-gradient(180deg, rgba(10, 22, 38, 0.14), rgba(10, 22, 38, 0.28));
 }
 
 .screen--active {
@@ -122,7 +121,7 @@ button {
   width: min(100%, 420px);
   padding: 20px 12px;
   text-align: center;
-  text-shadow: 0 4px 16px rgba(11, 25, 43, 0.22);
+  text-shadow: 0 5px 18px rgba(7, 16, 29, 0.3);
 }
 
 .screen__content--compact {
@@ -199,14 +198,14 @@ h2 {
 
 .button--secondary {
   color: #ffffff;
-  background: rgba(18, 38, 60, 0.3);
+  background: rgba(12, 24, 40, 0.42);
   backdrop-filter: blur(10px);
-  box-shadow: 0 14px 28px rgba(10, 21, 36, 0.14);
+  box-shadow: 0 14px 28px rgba(7, 15, 25, 0.18);
 }
 
 .button--ghost {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .toast {
@@ -236,9 +235,9 @@ h2 {
   max-width: calc(100% - 32px);
   padding: 0.8rem 1rem;
   border-radius: 999px;
-  background: rgba(18, 38, 60, 0.58);
+  background: rgba(12, 24, 40, 0.62);
   backdrop-filter: blur(10px);
-  box-shadow: 0 16px 40px rgba(10, 21, 36, 0.18);
+  box-shadow: 0 16px 40px rgba(7, 15, 25, 0.24);
   text-align: center;
 }
 

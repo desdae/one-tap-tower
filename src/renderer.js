@@ -1,3 +1,5 @@
+import { BackgroundRenderer } from './background.js';
+
 const BLOCK_COLORS = ['#f4a261', '#f6bd60', '#84a59d', '#4d908e', '#577590', '#f28482'];
 
 function roundedRect(ctx, x, y, width, height, radius) {
@@ -25,35 +27,12 @@ function drawBlock(ctx, x, y, width, height, fill) {
   ctx.restore();
 }
 
-function drawBackground(ctx, width, height) {
-  const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, '#103c66');
-  gradient.addColorStop(0.55, '#266da8');
-  gradient.addColorStop(1, '#f4d8a8');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.globalAlpha = 0.08;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(width * 0.2, height * 0.18, width * 0.18, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.globalAlpha = 0.06;
-  for (let i = 0; i < 4; i += 1) {
-    const columnWidth = width * (0.12 + i * 0.04);
-    const x = width * (0.12 + i * 0.21);
-    const y = height * (0.58 + (i % 2) * 0.06);
-    ctx.fillRect(x, y, columnWidth, height - y);
-  }
-  ctx.globalAlpha = 1;
-}
-
 export class Renderer {
   constructor(canvas, game) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.game = game;
+    this.background = new BackgroundRenderer();
     this.pixelRatio = 1;
     this.width = 0;
     this.height = 0;
@@ -71,6 +50,7 @@ export class Renderer {
     this.canvas.style.height = `${height}px`;
 
     this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
+    this.background.resize(width, height);
     this.scale = Math.min(
       (width - 28) / (this.game.worldWidth + 6),
       (height - 176) / ((this.game.visibleRows + 2.8) * this.game.blockHeight)
@@ -99,7 +79,7 @@ export class Renderer {
     const shakeY = Math.cos(this.game.elapsed * 34) * this.game.shake * 3;
 
     ctx.clearRect(0, 0, this.width, this.height);
-    drawBackground(ctx, this.width, this.height);
+    this.background.render(ctx, this.game.elapsed);
 
     this.drawShadowGround(shakeY);
     this.drawBlocks(shakeX, shakeY);
