@@ -99,6 +99,33 @@ test('GameEngine keeps the moving block exactly as narrow as the top block', () 
   assert.equal(game.currentBlock.width, 5);
 });
 
+test('GameEngine marks every 10th placeable block as golden', () => {
+  const game = new GameEngine();
+  game.startRun();
+
+  game.blocks = Array.from({ length: 10 }, (_, index) => ({
+    x: 50,
+    y: index * game.blockHeight,
+    width: game.initialBlockWidth,
+    colorIndex: index
+  }));
+
+  game.spawnNextBlock();
+
+  assert.equal(game.currentBlock.isGolden, true);
+
+  game.blocks.push({
+    x: 50,
+    y: 10 * game.blockHeight,
+    width: game.initialBlockWidth,
+    colorIndex: 10,
+    isGolden: true
+  });
+  game.spawnNextBlock();
+
+  assert.equal(game.currentBlock.isGolden, false);
+});
+
 test('resolvePlacement trims the overhang and reports the cut piece', () => {
   const result = resolvePlacement(
     { x: 50, width: 40 },
@@ -166,6 +193,34 @@ test('GameEngine adds escalating streak bonuses for consecutive perfect drops', 
   assert.equal(game.score, 9);
   assert.equal(game.perfectStreak, 3);
   assert.equal(game.longestStreak, 3);
+});
+
+test('GameEngine triples points for a golden perfect block after streak bonuses', () => {
+  const game = new GameEngine({ bestScore: 0, bestStreak: 0 });
+  game.startRun();
+
+  game.blocks = Array.from({ length: 10 }, (_, index) => ({
+    x: 50,
+    y: index * game.blockHeight,
+    width: game.initialBlockWidth,
+    colorIndex: index
+  }));
+
+  game.score = 9;
+  game.perfectStreak = 2;
+  game.longestStreak = 2;
+  game.spawnNextBlock();
+
+  assert.equal(game.currentBlock.isGolden, true);
+
+  game.currentBlock.x = 50;
+  const outcome = game.dropCurrent();
+
+  assert.equal(outcome.type, 'place');
+  assert.equal(outcome.perfect, true);
+  assert.equal(game.score, 21);
+  assert.equal(game.perfectStreak, 3);
+  assert.equal(game.blocks.at(-1).isGolden, true);
 });
 
 test('GameEngine resets the active streak on a non-perfect drop but keeps the longest streak', () => {

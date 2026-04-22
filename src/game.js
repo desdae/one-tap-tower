@@ -7,6 +7,8 @@ const BASE_SPEED = 24;
 const SHAKE_DECAY = 8;
 const WALL_BOUNCE_SPEED_MULTIPLIER = 1.2;
 const MAX_SPEED = BASE_SPEED * 10;
+const GOLDEN_BLOCK_INTERVAL = 10;
+const GOLDEN_BLOCK_MULTIPLIER = 3;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -129,6 +131,14 @@ export class GameEngine {
     return this.blocks[this.blocks.length - 1];
   }
 
+  getNextPlacedBlockNumber() {
+    return this.blocks.length;
+  }
+
+  isGoldenBlockNumber(blockNumber) {
+    return blockNumber > 0 && blockNumber % GOLDEN_BLOCK_INTERVAL === 0;
+  }
+
   getSpeed() {
     const placedBlocks = Math.max(0, this.blocks.length - 1);
     const speedTier = Math.floor(placedBlocks / 10);
@@ -144,13 +154,15 @@ export class GameEngine {
     const width = top.width;
     const startOnLeft = this.spawnSide < 0;
     const x = startOnLeft ? width * 0.5 : this.worldWidth - width * 0.5;
+    const blockNumber = this.getNextPlacedBlockNumber();
 
     this.currentBlock = {
       x,
       y: top.y + this.blockHeight,
       width,
       direction: startOnLeft ? 1 : -1,
-      speed: this.getSpeed()
+      speed: this.getSpeed(),
+      isGolden: this.isGoldenBlockNumber(blockNumber)
     };
 
     this.spawnSide *= -1;
@@ -191,7 +203,8 @@ export class GameEngine {
       x: result.settledBlock.x,
       y: top.y + this.blockHeight,
       width: result.overlapWidth,
-      colorIndex: this.blocks.length
+      colorIndex: this.blocks.length,
+      isGolden: this.currentBlock.isGolden
     };
 
     this.blocks.push(placedBlock);
@@ -207,12 +220,16 @@ export class GameEngine {
       this.perfectStreak = 0;
     }
 
+    if (placedBlock.isGolden) {
+      pointsAwarded *= GOLDEN_BLOCK_MULTIPLIER;
+    }
+
     this.score += pointsAwarded;
     this.updateRecords();
 
     if (result.cutPiece) {
       this.pushFallingPiece(
-        { x: result.cutPiece.x, y: placedBlock.y },
+        { x: result.cutPiece.x, y: placedBlock.y, isGolden: this.currentBlock.isGolden },
         result.cutPiece.width,
         result.cutPiece.direction
       );
@@ -223,13 +240,18 @@ export class GameEngine {
 
     this.effects.push({
       type: result.perfect ? 'perfect' : 'stack',
-      text: result.perfect ? `Perfect +${pointsAwarded}` : `+${pointsAwarded}`,
+      text: placedBlock.isGolden
+        ? `Golden +${pointsAwarded}`
+        : result.perfect
+          ? `Perfect +${pointsAwarded}`
+          : `+${pointsAwarded}`,
       x: placedBlock.x,
       y: placedBlock.y + this.blockHeight * 0.4,
       age: 0,
       ttl: result.perfect ? 0.9 : 0.45,
       streak: this.perfectStreak,
-      pointsAwarded
+      pointsAwarded,
+      isGolden: placedBlock.isGolden
     });
 
     this.events.push({
@@ -239,7 +261,8 @@ export class GameEngine {
       streak: this.perfectStreak,
       streakBroken: !result.perfect && previousStreak > 0,
       longestStreak: this.longestStreak,
-      pointsAwarded
+      pointsAwarded,
+      isGolden: placedBlock.isGolden
     });
 
     this.inputCooldown = 0.08;
@@ -291,7 +314,8 @@ export class GameEngine {
       vx: direction * 14,
       vy: 0,
       rotation: 0,
-      spin: direction * 2.2
+      spin: direction * 2.2,
+      isGolden: Boolean(block.isGolden)
     });
   }
 

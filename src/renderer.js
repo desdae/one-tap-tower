@@ -13,7 +13,7 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function drawBlock(ctx, x, y, width, height, fill) {
+function drawStandardBlock(ctx, x, y, width, height, fill) {
   ctx.save();
   ctx.shadowColor = 'rgba(15, 22, 33, 0.18)';
   ctx.shadowBlur = Math.max(8, height * 0.25);
@@ -25,6 +25,57 @@ function drawBlock(ctx, x, y, width, height, fill) {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.fillRect(x + 4, y + 4, Math.max(0, width - 8), Math.max(2, height * 0.16));
   ctx.restore();
+}
+
+function drawGoldenBlock(ctx, x, y, width, height) {
+  ctx.save();
+  const radius = Math.max(4, height * 0.15);
+  ctx.shadowColor = 'rgba(255, 194, 72, 0.3)';
+  ctx.shadowBlur = Math.max(12, height * 0.35);
+  ctx.shadowOffsetY = Math.max(3, height * 0.12);
+  roundedRect(ctx, x, y, width, height, radius);
+  const gradient = ctx.createLinearGradient(x, y, x, y + height);
+  gradient.addColorStop(0, '#fff4bf');
+  gradient.addColorStop(0.28, '#ffd666');
+  gradient.addColorStop(0.66, '#e9a93b');
+  gradient.addColorStop(1, '#b86c13');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.shadowColor = 'transparent';
+  roundedRect(ctx, x, y, width, height, radius);
+  ctx.clip();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = '#fff7d7';
+  const stripeWidth = Math.max(3, width * 0.16);
+  for (let stripe = -1; stripe < 4; stripe += 1) {
+    const stripeX = x + stripe * stripeWidth * 1.8;
+    ctx.beginPath();
+    ctx.moveTo(stripeX, y + height);
+    ctx.lineTo(stripeX + stripeWidth, y);
+    ctx.lineTo(stripeX + stripeWidth * 1.65, y);
+    ctx.lineTo(stripeX + stripeWidth * 0.65, y + height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(x + 4, y + 4, Math.max(0, width - 8), Math.max(2, height * 0.14));
+  ctx.strokeStyle = 'rgba(255, 241, 191, 0.44)';
+  ctx.lineWidth = 1.5;
+  roundedRect(ctx, x + 1, y + 1, width - 2, height - 2, Math.max(4, height * 0.14));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBlock(ctx, x, y, width, height, fill, isGolden = false) {
+  if (isGolden) {
+    drawGoldenBlock(ctx, x, y, width, height);
+    return;
+  }
+
+  drawStandardBlock(ctx, x, y, width, height, fill);
 }
 
 export class Renderer {
@@ -109,7 +160,7 @@ export class Renderer {
       const y = this.worldToScreenY(block.y, shakeY);
       const width = block.width * this.scale;
       const color = BLOCK_COLORS[block.colorIndex % BLOCK_COLORS.length];
-      drawBlock(ctx, x, y, width, height, color);
+      drawBlock(ctx, x, y, width, height, color, block.isGolden);
     }
 
     for (let i = 0; i < this.game.fallingPieces.length; i += 1) {
@@ -127,7 +178,8 @@ export class Renderer {
         -height * 0.5,
         width,
         height,
-        'rgba(255, 235, 188, 0.92)'
+        'rgba(255, 235, 188, 0.92)',
+        piece.isGolden
       );
       ctx.restore();
     }
@@ -167,7 +219,8 @@ export class Renderer {
       y,
       block.width * this.scale,
       this.game.blockHeight * this.scale,
-      '#f7f7fb'
+      '#f7f7fb',
+      block.isGolden
     );
   }
 
@@ -258,10 +311,14 @@ export class Renderer {
         ctx.restore();
 
         ctx.font = `700 ${18 + Math.min(10, (effect.streak || 1) * 2)}px system-ui, sans-serif`;
-        ctx.fillStyle = (effect.streak || 1) >= 4 ? '#e8fbff' : '#fff0a6';
+        ctx.fillStyle = effect.isGolden
+          ? '#fff4bf'
+          : (effect.streak || 1) >= 4
+            ? '#e8fbff'
+            : '#fff0a6';
       } else {
         ctx.font = '700 16px system-ui, sans-serif';
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = effect.isGolden ? '#ffe18d' : '#ffffff';
       }
 
       ctx.fillText(effect.text, x, y);
