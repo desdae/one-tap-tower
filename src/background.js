@@ -1,3 +1,5 @@
+const cityBackgroundUrl = new URL('../img/bg_city.webp', import.meta.url).href;
+
 export const BACKGROUND_TUNING = {
   sunX: 0.22,
   sunY: 0.18,
@@ -27,6 +29,39 @@ function createCanvas(width, height) {
   canvas.width = Math.max(1, Math.floor(width));
   canvas.height = Math.max(1, Math.floor(height));
   return canvas;
+}
+
+export function computeCoverRect(sourceWidth, sourceHeight, destWidth, destHeight) {
+  const sourceRatio = sourceWidth / sourceHeight;
+  const destRatio = destWidth / destHeight;
+
+  if (sourceRatio > destRatio) {
+    const cropWidth = sourceHeight * destRatio;
+    const sourceX = (sourceWidth - cropWidth) * 0.5;
+    return {
+      sourceX,
+      sourceY: 0,
+      sourceWidth: cropWidth,
+      sourceHeight,
+      destX: 0,
+      destY: 0,
+      destWidth,
+      destHeight
+    };
+  }
+
+  const cropHeight = sourceWidth / destRatio;
+  const sourceY = (sourceHeight - cropHeight) * 0.5;
+  return {
+    sourceX: 0,
+    sourceY,
+    sourceWidth: sourceWidth,
+    sourceHeight: cropHeight,
+    destX: 0,
+    destY: 0,
+    destWidth,
+    destHeight
+  };
 }
 
 export function generateSkylineBuildings({
@@ -207,52 +242,41 @@ export class BackgroundRenderer {
   constructor() {
     this.width = 0;
     this.height = 0;
-    this.layers = [];
     this.clouds = buildClouds(91);
     this.particles = buildParticles(133);
+    this.coverRect = null;
+    this.image = null;
+    this.imageLoaded = false;
+
+    if (typeof Image !== 'undefined') {
+      this.image = new Image();
+      this.image.decoding = 'async';
+      this.image.onload = () => {
+        this.imageLoaded = true;
+        this.updateCoverRect();
+      };
+      this.image.src = cityBackgroundUrl;
+    }
   }
 
   resize(width, height) {
     this.width = width;
     this.height = height;
-    this.layers = LAYER_CONFIGS.slice(0, BACKGROUND_TUNING.layerCount).map((config, index) =>
-      this.createLayer(config, index)
-    );
+    this.updateCoverRect();
   }
 
-  createLayer(config, index) {
-    const layerWidth = Math.max(this.width + 180, Math.round(this.width * (1.3 + index * 0.08)));
-    const layerHeight = this.height;
-    const horizonY = Math.round(this.height * config.horizonRatio);
-    const buildings = generateSkylineBuildings({
-      seed: config.seed,
-      width: layerWidth,
-      horizonY,
-      minWidth: config.minWidth,
-      maxWidth: config.maxWidth,
-      minHeight: config.minHeight,
-      maxHeight: config.maxHeight
-    });
-    const canvas = createCanvas(layerWidth, layerHeight);
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = config.overlay;
-    ctx.fillRect(0, horizonY - 40, layerWidth, layerHeight - horizonY + 40);
-
-    for (let i = 0; i < buildings.length; i += 1) {
-      drawBuildingShape(ctx, buildings[i], config.color);
+  updateCoverRect() {
+    if (!this.imageLoaded || !this.image || !this.width || !this.height) {
+      this.coverRect = null;
+      return;
     }
 
-    if (config.hasWindows) {
-      paintWindows(ctx, buildings, config, 0);
-    }
-
-    return {
-      ...config,
-      buildings,
-      canvas,
-      horizonY
-    };
+    this.coverRect = computeCoverRect(
+      this.image.naturalWidth,
+      this.image.naturalHeight,
+      this.width,
+      this.height
+    );
   }
 
   render(ctx, elapsed) {
@@ -260,28 +284,50 @@ export class BackgroundRenderer {
     this.drawSun(ctx);
     this.drawClouds(ctx, elapsed);
     this.drawParticles(ctx, elapsed);
-    this.drawLayers(ctx, elapsed);
     this.drawHaze(ctx, elapsed);
   }
 
   drawSky(ctx) {
-    const gradient = ctx.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, '#0d2747');
-    gradient.addColorStop(0.3, '#153b67');
-    gradient.addColorStop(0.64, '#2b6691');
-    gradient.addColorStop(1, '#7fb0c6');
-    ctx.fillStyle = gradient;
+    if (this.imageLoaded && this.image && this.coverRect) {
+      const cover = this.coverRect;
+      ctx.drawImage(
+        this.image,
+        cover.sourceX,
+        cover.sourceY,
+        cover.sourceWidth,
+        cover.sourceHeight,
+        cover.destX,
+        cover.destY,
+        cover.destWidth,
+        cover.destHeight
+      );
+
+      const tint = ctx.createLinearGradient(0, 0, 0, this.height);
+      tint.addColorStop(0, 'rgba(8, 19, 38, 0.2)');
+      tint.addColorStop(0.46, 'rgba(17, 54, 92, 0.08)');
+      tint.addColorStop(1, 'rgba(9, 23, 43, 0.18)');
+      ctx.fillStyle = tint;
+      ctx.fillRect(0, 0, this.width, this.height);
+      return;
+    }
+
+    const fallback = ctx.createLinearGradient(0, 0, 0, this.height);
+    fallback.addColorStop(0, '#0d2747');
+    fallback.addColorStop(0.3, '#153b67');
+    fallback.addColorStop(0.64, '#2b6691');
+    fallback.addColorStop(1, '#7fb0c6');
+    ctx.fillStyle = fallback;
     ctx.fillRect(0, 0, this.width, this.height);
   }
 
   drawSun(ctx) {
-    const sunX = this.width * BACKGROUND_TUNING.sunX;
-    const sunY = this.height * BACKGROUND_TUNING.sunY;
-    const radius = this.width * BACKGROUND_TUNING.sunRadius;
+    const sunX = this.width * 0.16;
+    const sunY = this.height * 0.2;
+    const radius = this.width * 0.13;
     const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, radius * 1.8);
-    glow.addColorStop(0, 'rgba(255, 225, 168, 0.24)');
-    glow.addColorStop(0.24, 'rgba(255, 213, 155, 0.16)');
-    glow.addColorStop(0.58, 'rgba(153, 204, 255, 0.08)');
+    glow.addColorStop(0, 'rgba(255, 230, 176, 0.16)');
+    glow.addColorStop(0.24, 'rgba(255, 221, 170, 0.1)');
+    glow.addColorStop(0.58, 'rgba(153, 204, 255, 0.05)');
     glow.addColorStop(1, 'rgba(17, 40, 68, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, this.width, this.height);
@@ -297,8 +343,8 @@ export class BackgroundRenderer {
       const height = cloud.height * this.height;
 
       ctx.save();
-      ctx.globalAlpha = cloud.alpha;
-      ctx.fillStyle = '#f4fbff';
+      ctx.globalAlpha = cloud.alpha * 0.7;
+      ctx.fillStyle = '#dcecff';
       ctx.beginPath();
       ctx.ellipse(x, y, width * 0.35, height * 0.52, 0, 0, Math.PI * 2);
       ctx.ellipse(x + width * 0.24, y - height * 0.1, width * 0.28, height * 0.42, 0, 0, Math.PI * 2);
@@ -327,47 +373,21 @@ export class BackgroundRenderer {
     ctx.globalAlpha = 1;
   }
 
-  drawLayers(ctx, elapsed) {
-    for (let i = 0; i < this.layers.length; i += 1) {
-      const layer = this.layers[i];
-
-      if (layer.hasWindows) {
-        const shimmer = 0.5 + 0.5 * Math.sin(elapsed * BACKGROUND_TUNING.shimmerSpeed * 1000 + i * 1.7);
-        const layerCtx = layer.canvas.getContext('2d');
-        layerCtx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
-        layerCtx.fillStyle = layer.overlay;
-        layerCtx.fillRect(0, layer.horizonY - 40, layer.canvas.width, layer.canvas.height - layer.horizonY + 40);
-        for (let buildingIndex = 0; buildingIndex < layer.buildings.length; buildingIndex += 1) {
-          drawBuildingShape(layerCtx, layer.buildings[buildingIndex], layer.color);
-        }
-        paintWindows(layerCtx, layer.buildings, layer, shimmer * layer.windowAlpha);
-      }
-
-      const offset = (elapsed * BACKGROUND_TUNING.skylineDrift * layer.drift) % layer.canvas.width;
-      const drawX = -offset;
-      ctx.globalAlpha = i === this.layers.length - 1 ? 0.98 : 0.84 - i * 0.06;
-      ctx.drawImage(layer.canvas, drawX, 0);
-      ctx.drawImage(layer.canvas, drawX + layer.canvas.width, 0);
-    }
-
-    ctx.globalAlpha = 1;
-  }
-
   drawHaze(ctx, elapsed) {
-    const horizon = this.height * 0.72;
+    const horizon = this.height * 0.74;
     const haze = ctx.createLinearGradient(0, horizon, 0, this.height);
-    haze.addColorStop(0, `rgba(188, 221, 228, ${BACKGROUND_TUNING.hazeOpacity * 0.18})`);
-    haze.addColorStop(0.4, `rgba(125, 186, 206, ${BACKGROUND_TUNING.hazeOpacity})`);
-    haze.addColorStop(1, 'rgba(18, 35, 54, 0.24)');
+    haze.addColorStop(0, `rgba(201, 230, 240, ${BACKGROUND_TUNING.hazeOpacity * 0.2})`);
+    haze.addColorStop(0.4, `rgba(126, 186, 212, ${BACKGROUND_TUNING.hazeOpacity * 0.72})`);
+    haze.addColorStop(1, 'rgba(18, 35, 54, 0.28)');
     ctx.fillStyle = haze;
     ctx.fillRect(0, horizon, this.width, this.height - horizon);
 
     const pulse = 0.03 * (0.5 + 0.5 * Math.sin(elapsed * 0.08));
-    ctx.fillStyle = `rgba(255, 233, 194, ${(0.07 + pulse).toFixed(3)})`;
-    ctx.fillRect(0, this.height * 0.78, this.width, this.height * 0.08);
+    ctx.fillStyle = `rgba(232, 247, 255, ${(0.06 + pulse * 0.5).toFixed(3)})`;
+    ctx.fillRect(0, this.height * 0.76, this.width, this.height * 0.1);
 
     const vignette = ctx.createLinearGradient(0, 0, 0, this.height);
-    vignette.addColorStop(0, 'rgba(4, 10, 20, 0.04)');
+    vignette.addColorStop(0, 'rgba(4, 10, 20, 0.06)');
     vignette.addColorStop(0.65, 'rgba(4, 10, 20, 0)');
     vignette.addColorStop(1, 'rgba(4, 10, 20, 0.18)');
     ctx.fillStyle = vignette;

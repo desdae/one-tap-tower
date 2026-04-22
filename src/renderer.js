@@ -222,7 +222,7 @@ export class Renderer {
     ctx.shadowBlur = 0;
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = 'rgba(209, 235, 255, 0.78)';
-    ctx.fillText(`Next perfect +${this.game.perfectStreak + 3}`, centerX, y + 18);
+    ctx.fillText(`Next perfect +${this.game.perfectStreak + 2}`, centerX, y + 18);
     ctx.restore();
   }
 

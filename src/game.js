@@ -5,6 +5,8 @@ export const VISIBLE_ROWS = 8.5;
 
 const BASE_SPEED = 24;
 const SHAKE_DECAY = 8;
+const WALL_BOUNCE_SPEED_MULTIPLIER = 1.2;
+const MAX_SPEED = BASE_SPEED * 10;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -130,7 +132,7 @@ export class GameEngine {
   getSpeed() {
     const placedBlocks = Math.max(0, this.blocks.length - 1);
     const speedTier = Math.floor(placedBlocks / 10);
-    return BASE_SPEED * 1.1 ** speedTier;
+    return Math.min(MAX_SPEED, BASE_SPEED * 1.1 ** speedTier);
   }
 
   getPerfectTolerance() {
@@ -200,7 +202,7 @@ export class GameEngine {
     if (result.perfect) {
       this.perfectStreak += 1;
       this.longestStreak = Math.max(this.longestStreak, this.perfectStreak);
-      pointsAwarded = 2 + this.perfectStreak;
+      pointsAwarded = 1 + this.perfectStreak;
     } else {
       this.perfectStreak = 0;
     }
@@ -316,9 +318,17 @@ export class GameEngine {
     if (this.currentBlock.x <= minX) {
       this.currentBlock.x = minX;
       this.currentBlock.direction = 1;
+      this.currentBlock.speed = Math.min(
+        MAX_SPEED,
+        this.currentBlock.speed * WALL_BOUNCE_SPEED_MULTIPLIER
+      );
     } else if (this.currentBlock.x >= maxX) {
       this.currentBlock.x = maxX;
       this.currentBlock.direction = -1;
+      this.currentBlock.speed = Math.min(
+        MAX_SPEED,
+        this.currentBlock.speed * WALL_BOUNCE_SPEED_MULTIPLIER
+      );
     }
   }
 

@@ -28,6 +28,63 @@ test('GameEngine increases move speed by 10 percent every 10 placed blocks', () 
   assert.ok(Math.abs(game.currentBlock.speed - 29.04) < 1e-9);
 });
 
+test('GameEngine caps progression speed at 10x the initial speed', () => {
+  const game = new GameEngine();
+  game.startRun();
+
+  game.blocks = Array.from({ length: 500 }, (_, index) => ({
+    x: 50,
+    y: index * game.blockHeight,
+    width: game.initialBlockWidth,
+    colorIndex: index
+  }));
+
+  game.spawnNextBlock();
+
+  assert.equal(game.currentBlock.speed, 240);
+});
+
+test('GameEngine increases moving block speed by 20 percent on each wall hit', () => {
+  const game = new GameEngine();
+  game.startRun();
+
+  const maxX = game.worldWidth - game.currentBlock.width * 0.5;
+  const minX = game.currentBlock.width * 0.5;
+
+  game.currentBlock.x = maxX - 1;
+  game.currentBlock.direction = 1;
+  game.currentBlock.speed = 10;
+  game.updateCurrentBlock(0.2);
+
+  assert.equal(game.currentBlock.x, maxX);
+  assert.equal(game.currentBlock.direction, -1);
+  assert.ok(Math.abs(game.currentBlock.speed - 12) < 1e-9);
+
+  game.currentBlock.x = minX + 1;
+  game.currentBlock.direction = -1;
+  game.updateCurrentBlock(0.2);
+
+  assert.equal(game.currentBlock.x, minX);
+  assert.equal(game.currentBlock.direction, 1);
+  assert.ok(Math.abs(game.currentBlock.speed - 14.4) < 1e-9);
+});
+
+test('GameEngine caps wall-hit speed growth at 10x the initial speed', () => {
+  const game = new GameEngine();
+  game.startRun();
+
+  const maxX = game.worldWidth - game.currentBlock.width * 0.5;
+  game.currentBlock.x = maxX - 1;
+  game.currentBlock.direction = 1;
+  game.currentBlock.speed = 235;
+
+  game.updateCurrentBlock(0.2);
+
+  assert.equal(game.currentBlock.x, maxX);
+  assert.equal(game.currentBlock.direction, -1);
+  assert.equal(game.currentBlock.speed, 240);
+});
+
 test('GameEngine keeps the moving block exactly as narrow as the top block', () => {
   const game = new GameEngine();
   game.startRun();
@@ -90,7 +147,7 @@ test('GameEngine adds escalating streak bonuses for consecutive perfect drops', 
   game.currentBlock.x = 50;
   let outcome = game.dropCurrent();
   assert.equal(outcome.type, 'place');
-  assert.equal(game.score, 3);
+  assert.equal(game.score, 2);
   assert.equal(game.perfectStreak, 1);
   assert.equal(game.longestStreak, 1);
 
@@ -98,7 +155,7 @@ test('GameEngine adds escalating streak bonuses for consecutive perfect drops', 
   game.currentBlock.x = 50;
   outcome = game.dropCurrent();
   assert.equal(outcome.type, 'place');
-  assert.equal(game.score, 7);
+  assert.equal(game.score, 5);
   assert.equal(game.perfectStreak, 2);
   assert.equal(game.longestStreak, 2);
 
@@ -106,7 +163,7 @@ test('GameEngine adds escalating streak bonuses for consecutive perfect drops', 
   game.currentBlock.x = 50;
   outcome = game.dropCurrent();
   assert.equal(outcome.type, 'place');
-  assert.equal(game.score, 12);
+  assert.equal(game.score, 9);
   assert.equal(game.perfectStreak, 3);
   assert.equal(game.longestStreak, 3);
 });
@@ -127,7 +184,7 @@ test('GameEngine resets the active streak on a non-perfect drop but keeps the lo
 
   assert.equal(outcome.type, 'place');
   assert.equal(outcome.perfect, false);
-  assert.equal(game.score, 8);
+  assert.equal(game.score, 6);
   assert.equal(game.perfectStreak, 0);
   assert.equal(game.longestStreak, 2);
 });
@@ -139,7 +196,7 @@ test('GameEngine stacks successful drops, ends on a miss, and supports one conti
   game.currentBlock.x = 50;
   let outcome = game.dropCurrent();
   assert.equal(outcome.type, 'place');
-  assert.equal(game.score, 3);
+  assert.equal(game.score, 2);
   assert.equal(game.bestScore, 4);
   assert.equal(game.blocks.at(-1).width, game.initialBlockWidth);
 

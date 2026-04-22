@@ -1,7 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { generateSkylineBuildings } from '../src/background.js';
+import { computeCoverRect, generateSkylineBuildings } from '../src/background.js';
+
+test('computeCoverRect scales a portrait background image to cover the viewport', () => {
+  const result = computeCoverRect(432, 768, 360, 780);
+
+  assert.ok(Math.abs(result.sourceX - 38.769230769230774) < 1e-9);
+  assert.equal(result.sourceY, 0);
+  assert.ok(Math.abs(result.sourceWidth - 354.46153846153845) < 1e-9);
+  assert.equal(result.sourceHeight, 768);
+  assert.equal(result.destX, 0);
+  assert.equal(result.destY, 0);
+  assert.equal(result.destWidth, 360);
+  assert.equal(result.destHeight, 780);
+});
 
 test('generateSkylineBuildings is deterministic for the same seed and bounds', () => {
   const options = {
