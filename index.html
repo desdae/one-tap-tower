@@ -29,10 +29,50 @@
       </div>
 
       <div class="topbar">
-        <button id="sound-toggle" class="chip" type="button">Sound On</button>
+        <button id="settings-button" class="chip chip--icon" type="button" aria-label="Open options">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M19.14 12.94a7.43 7.43 0 0 0 .05-.94 7.43 7.43 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.04 7.04 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.89 2h-3.78a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.13.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.72 8.48a.5.5 0 0 0 .12.64l2.03 1.58A7.43 7.43 0 0 0 4.81 12c0 .32.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.78a.5.5 0 0 0 .49-.42l.36-2.54c.58-.23 1.13-.54 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"
+              fill="currentColor"
+            />
+          </svg>
+        </button>
       </div>
 
       <div id="toast" class="toast" aria-live="polite"></div>
+
+      <section id="options-screen" class="options-screen" aria-hidden="true">
+        <div class="options-panel" role="dialog" aria-modal="true" aria-labelledby="options-title">
+          <div class="options-panel__header">
+            <div>
+              <p class="eyebrow">Options</p>
+              <h3 id="options-title">Audio</h3>
+            </div>
+            <button
+              id="options-close-button"
+              class="options-panel__close"
+              type="button"
+              aria-label="Close options"
+            >
+              X
+            </button>
+          </div>
+          <label class="slider-field" for="music-volume">
+            <span class="slider-field__row">
+              <span>Music volume</span>
+              <strong id="music-volume-value">35%</strong>
+            </span>
+            <input id="music-volume" class="slider" type="range" min="0" max="100" step="1" />
+          </label>
+          <label class="slider-field" for="effects-volume">
+            <span class="slider-field__row">
+              <span>Effects volume</span>
+              <strong id="effects-volume-value">90%</strong>
+            </span>
+            <input id="effects-volume" class="slider" type="range" min="0" max="100" step="1" />
+          </label>
+        </div>
+      </section>
 
       <section id="menu-screen" class="screen screen--active" aria-label="Start screen">
         <div class="screen__content">
@@ -44,9 +84,6 @@
           </p>
           <div class="button-row">
             <button id="play-button" class="button button--primary" type="button">Play</button>
-            <button id="menu-sound-button" class="button button--secondary" type="button">
-              Sound On
-            </button>
           </div>
           <div class="button-row">
             <button id="remove-ads-button" class="button button--ghost" type="button">

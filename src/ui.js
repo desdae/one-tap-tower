@@ -2,6 +2,14 @@ function setHidden(element, hidden) {
   element.classList.toggle('screen--active', !hidden);
 }
 
+function formatVolume(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function sliderValueToVolume(input) {
+  return Number.parseInt(input.value, 10) / 100;
+}
+
 export function createUI() {
   const elements = {
     score: document.querySelector('#score-value'),
@@ -17,22 +25,21 @@ export function createUI() {
     gameoverBest: document.querySelector('#gameover-best'),
     gameoverStreak: document.querySelector('#gameover-streak'),
     gameoverBestStreak: document.querySelector('#gameover-best-streak'),
+    options: document.querySelector('#options-screen'),
+    musicVolume: document.querySelector('#music-volume'),
+    musicVolumeValue: document.querySelector('#music-volume-value'),
+    effectsVolume: document.querySelector('#effects-volume'),
+    effectsVolumeValue: document.querySelector('#effects-volume-value'),
     playButton: document.querySelector('#play-button'),
     restartButton: document.querySelector('#restart-button'),
     continueButton: document.querySelector('#continue-button'),
-    soundToggle: document.querySelector('#sound-toggle'),
-    menuSoundButton: document.querySelector('#menu-sound-button'),
+    settingsButton: document.querySelector('#settings-button'),
+    optionsCloseButton: document.querySelector('#options-close-button'),
     removeAdsButton: document.querySelector('#remove-ads-button'),
     gameoverRemoveAds: document.querySelector('#gameover-remove-ads')
   };
 
   let toastTimer = 0;
-
-  function setSoundLabel(enabled) {
-    const label = enabled ? 'Sound On' : 'Sound Off';
-    elements.soundToggle.textContent = label;
-    elements.menuSoundButton.textContent = label;
-  }
 
   function setRemoveAdsLabel(owned) {
     const label = owned ? 'Ads Removed' : 'Remove Ads';
@@ -50,13 +57,31 @@ export function createUI() {
     }, 1200);
   }
 
+  function setSliderValue(input, label, value) {
+    const clamped = Math.max(0, Math.min(1, value));
+    input.value = String(Math.round(clamped * 100));
+    label.textContent = formatVolume(clamped);
+  }
+
   return {
     bind(actions) {
       elements.playButton.addEventListener('click', actions.onPlay);
       elements.restartButton.addEventListener('click', actions.onRestart);
       elements.continueButton.addEventListener('click', actions.onContinue);
-      elements.soundToggle.addEventListener('click', actions.onToggleSound);
-      elements.menuSoundButton.addEventListener('click', actions.onToggleSound);
+      elements.settingsButton.addEventListener('click', actions.onOpenOptions);
+      elements.optionsCloseButton.addEventListener('click', actions.onCloseOptions);
+      elements.options.addEventListener('click', (event) => {
+        if (event.target === elements.options) {
+          actions.onCloseOptions();
+        }
+      });
+      elements.musicVolume.addEventListener('input', () => {
+        actions.onMusicVolumeChange(sliderValueToVolume(elements.musicVolume));
+      });
+      elements.effectsVolume.addEventListener('input', () => {
+        actions.onEffectsVolumeChange(sliderValueToVolume(elements.effectsVolume));
+      });
+      elements.effectsVolume.addEventListener('change', actions.onPreviewEffects);
       elements.removeAdsButton.addEventListener('click', actions.onRemoveAds);
       elements.gameoverRemoveAds.addEventListener('click', actions.onRemoveAds);
     },
@@ -66,6 +91,11 @@ export function createUI() {
       elements.best.textContent = String(bestScore);
       elements.streak.textContent = `x${streak}`;
       elements.streakMetric.classList.toggle('hud__metric--hidden', streak < 2);
+    },
+
+    setAudioLevels({ musicVolume, effectsVolume }) {
+      setSliderValue(elements.musicVolume, elements.musicVolumeValue, musicVolume);
+      setSliderValue(elements.effectsVolume, elements.effectsVolumeValue, effectsVolume);
     },
 
     showMenu(bestScore, bestStreak) {
@@ -90,13 +120,23 @@ export function createUI() {
       setHidden(elements.gameover, false);
     },
 
-    setContinueBusy(isBusy) {
-      elements.continueButton.disabled = isBusy;
-      elements.continueButton.textContent = isBusy ? 'Watching…' : 'Continue Once';
+    showOptions() {
+      elements.options.classList.add('options-screen--active');
+      elements.options.setAttribute('aria-hidden', 'false');
     },
 
-    setSoundEnabled(enabled) {
-      setSoundLabel(enabled);
+    hideOptions() {
+      elements.options.classList.remove('options-screen--active');
+      elements.options.setAttribute('aria-hidden', 'true');
+    },
+
+    isOptionsOpen() {
+      return elements.options.classList.contains('options-screen--active');
+    },
+
+    setContinueBusy(isBusy) {
+      elements.continueButton.disabled = isBusy;
+      elements.continueButton.textContent = isBusy ? 'Watching...' : 'Continue Once';
     },
 
     setRemoveAdsOwned(owned) {

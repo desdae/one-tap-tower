@@ -95,12 +95,14 @@ button {
 
 .topbar {
   top: calc(env(safe-area-inset-top, 0) + 86px);
+  z-index: 3;
   display: flex;
   justify-content: flex-end;
   padding: 0 16px;
 }
 
 .chip,
+.options-panel__close,
 .button {
   border: 0;
   border-radius: 999px;
@@ -117,6 +119,20 @@ button {
   box-shadow: 0 12px 28px rgba(7, 15, 25, 0.2);
 }
 
+.chip--icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip--icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .screen {
   display: none;
   align-items: center;
@@ -127,6 +143,82 @@ button {
 
 .screen--active {
   display: flex;
+}
+
+.options-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding:
+    calc(env(safe-area-inset-top, 0) + 136px)
+    16px
+    max(24px, env(safe-area-inset-bottom, 0))
+    16px;
+  background: rgba(8, 15, 26, 0.22);
+  backdrop-filter: blur(6px);
+}
+
+.options-screen--active {
+  display: flex;
+}
+
+.options-panel {
+  width: min(100%, 320px);
+  padding: 18px;
+  border-radius: 28px;
+  background: rgba(11, 23, 38, 0.84);
+  box-shadow: 0 20px 60px rgba(7, 15, 25, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.options-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.options-panel__header .eyebrow {
+  margin-bottom: 6px;
+}
+
+.options-panel__header h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+}
+
+.options-panel__close {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  color: rgba(255, 255, 255, 0.94);
+  text-align: left;
+}
+
+.slider-field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.slider {
+  width: 100%;
+  accent-color: #ffd88e;
 }
 
 .screen__content {
@@ -264,5 +356,10 @@ h2 {
 
   .topbar {
     top: calc(env(safe-area-inset-top, 0) + 78px);
+  }
+
+  .options-screen {
+    justify-content: center;
+    padding-top: calc(env(safe-area-inset-top, 0) + 112px);
   }
 }

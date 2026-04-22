@@ -16,11 +16,23 @@ const game = new GameEngine({
 });
 const renderer = new Renderer(document.querySelector('#game-canvas'), game);
 const ui = createUI();
-const audio = createAudioController({
-  enabled: storage.getSoundEnabled(),
-  onToggle(enabled) {
-    storage.setSoundEnabled(enabled);
-    ui.setSoundEnabled(enabled);
+let audio;
+audio = createAudioController({
+  musicVolume: storage.getMusicVolume(),
+  effectsVolume: storage.getEffectsVolume(),
+  onMusicVolumeChange(value) {
+    storage.setMusicVolume(value);
+    ui.setAudioLevels({
+      musicVolume: value,
+      effectsVolume: audio.getEffectsVolume()
+    });
+  },
+  onEffectsVolumeChange(value) {
+    storage.setEffectsVolume(value);
+    ui.setAudioLevels({
+      musicVolume: audio.getMusicVolume(),
+      effectsVolume: value
+    });
   }
 });
 const monetization = createMonetization({ platform, storage });
@@ -45,6 +57,7 @@ function persistRecords() {
 }
 
 function beginRun() {
+  ui.hideOptions();
   game.startRun();
   persistRecords();
   syncHud();
@@ -123,6 +136,24 @@ ui.bind({
     audio.unlock();
     beginRun();
   },
+  onOpenOptions() {
+    audio.unlock();
+    ui.showOptions();
+  },
+  onCloseOptions() {
+    ui.hideOptions();
+  },
+  onMusicVolumeChange(value) {
+    audio.unlock();
+    audio.setMusicVolume(value);
+  },
+  onEffectsVolumeChange(value) {
+    audio.unlock();
+    audio.setEffectsVolume(value);
+  },
+  onPreviewEffects() {
+    audio.play('place');
+  },
   async onContinue() {
     ui.setContinueBusy(true);
     const rewarded = await monetization.showRewardedContinue();
@@ -134,16 +165,10 @@ ui.bind({
     }
 
     if (game.continueRun()) {
+      ui.hideOptions();
       ui.showGameplay();
       persistRecords();
       syncHud();
-    }
-  },
-  onToggleSound() {
-    const enabled = audio.toggle();
-    if (enabled) {
-      audio.unlock();
-      audio.play('place');
     }
   },
   async onRemoveAds() {
@@ -166,6 +191,17 @@ document.querySelector('#game-canvas').addEventListener('pointerdown', (event) =
 });
 
 window.addEventListener('keydown', (event) => {
+  if (ui.isOptionsOpen()) {
+    if (event.code === 'Escape') {
+      event.preventDefault();
+      ui.hideOptions();
+    }
+    if (event.code === 'Space' || event.code === 'Enter') {
+      event.preventDefault();
+    }
+    return;
+  }
+
   if (event.code === 'Space' || event.code === 'Enter') {
     event.preventDefault();
     if (game.state === 'menu') {
@@ -182,13 +218,18 @@ window.addEventListener('keydown', (event) => {
 platform.bindLifecycle({
   onPause() {
     lastFrame = performance.now();
+    audio.handlePause();
   },
   onResume() {
     lastFrame = performance.now();
+    audio.handleResume();
   }
 });
 
-ui.setSoundEnabled(audio.isEnabled());
+ui.setAudioLevels({
+  musicVolume: audio.getMusicVolume(),
+  effectsVolume: audio.getEffectsVolume()
+});
 ui.setRemoveAdsOwned(monetization.hasRemoveAds());
 ui.showMenu(game.bestScore, game.bestStreak);
 syncHud();
