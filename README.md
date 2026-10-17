@@ -50,6 +50,14 @@ npm test
 
 ## Monetization TODOs
 
-- Rewarded continue stub and native integration hook: [src/monetization.js](C:/SL/ailab/_capacitator/one-tap-tower/src/monetization.js)
-- Remove Ads stub and Play Billing hook: [src/monetization.js](C:/SL/ailab/_capacitator/one-tap-tower/src/monetization.js)
-- Platform detection and lifecycle glue: [src/platform.js](C:/SL/ailab/_capacitator/one-tap-tower/src/platform.js)
+- Rewarded continue stub and native integration hook: [src/monetization.js](src/monetization.js)
+- Remove Ads stub and Play Billing hook: [src/monetization.js](src/monetization.js)
+- Platform detection and lifecycle glue: [src/platform.js](src/platform.js)
+
+## Release builds (no Android Studio needed)
+
+GitHub Actions (`.github/workflows/android.yml`) builds a release `.aab` on every push to `main` and on demand (Actions → Android build → Run workflow). Download it from the run's **Artifacts** and upload it in Play Console. Each run gets a new `versionCode` (the run number), so Play always accepts the next upload.
+
+Signing uses four repository secrets: `ANDROID_KEYSTORE_BASE64` (the upload keystore, base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Without them the bundle is built unsigned, which Play rejects. Pull request builds are always unsigned and only check that the app builds.
+
+Privacy policy for the store listing: [PRIVACY.md](PRIVACY.md).

@@ -231,6 +231,7 @@ ui.setAudioLevels({
   effectsVolume: audio.getEffectsVolume()
 });
 ui.setRemoveAdsOwned(monetization.hasRemoveAds());
+ui.setRemoveAdsAvailable(monetization.canOfferRemoveAds());
 ui.showMenu(game.bestScore, game.bestStreak);
 syncHud();
 resize();

@@ -12,6 +12,11 @@ export function createMonetization({ platform, storage }) {
       return removeAdsOwned;
     },
 
+    // Hidden on native until Play Billing is wired, so testers never see a dead button.
+    canOfferRemoveAds() {
+      return platform.isBrowser;
+    },
+
     canOfferContinue(game) {
       return game.canContinue() && platform.isBrowser;
     },

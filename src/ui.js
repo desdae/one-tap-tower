@@ -143,6 +143,11 @@ export function createUI() {
       setRemoveAdsLabel(owned);
     },
 
+    setRemoveAdsAvailable(available) {
+      elements.removeAdsButton.hidden = !available;
+      elements.gameoverRemoveAds.hidden = !available;
+    },
+
     toast(message) {
       showToast(message);
     }
