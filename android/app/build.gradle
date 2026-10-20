@@ -4,7 +4,7 @@ android {
     namespace = "com.onetaptower.game"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.onetaptower.game"
+        applicationId "com.desdae.onetaptower"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes these so every build gets a fresh versionCode without editing this file.
