@@ -35,7 +35,12 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            # Pasting into the GitHub form can add spaces or line breaks; drop them before decoding.
+            clean=$(printf '%s' "$KEYSTORE_BASE64" | tr -d ' \t\r\n')
+            if ! printf '%s' "$clean" | base64 -d > "$RUNNER_TEMP/upload.jks"; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is not valid base64 (length ${#clean}, expected 3468, $(printf '%s' "$clean" | tr -d 'A-Za-z0-9+/=' | wc -c) unexpected characters). Re-paste the whole .base64.txt file."
+              exit 1
+            fi
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
           fi
 
