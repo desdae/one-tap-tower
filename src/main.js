@@ -11,11 +11,15 @@ import { createUI } from './ui.js';
 
 const storage = createStorage();
 const platform = createPlatform();
+const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const game = new GameEngine({
   bestScore: storage.getBestScore(),
-  bestStreak: storage.getBestStreak()
+  bestStreak: storage.getBestStreak(),
+  reducedEffects: storage.getReducedEffects(prefersReducedMotion)
 });
 const renderer = new Renderer(document.querySelector('#game-canvas'), game);
+renderer.screenShake = storage.getScreenShake();
+renderer.comboPopups = storage.getComboPopups();
 const ui = createUI();
 let audio;
 audio = createAudioController({
@@ -37,7 +41,7 @@ audio = createAudioController({
   }
 });
 const monetization = createMonetization({ platform, storage });
-const haptics = createHaptics({ platform });
+const haptics = createHaptics({ platform, enabled: storage.getVibration() });
 
 let lastFrame = performance.now();
 
@@ -79,6 +83,12 @@ function handleGameplayTap() {
   }
 }
 
+function comboToast(message) {
+  if (renderer.comboPopups) {
+    ui.toast(message);
+  }
+}
+
 function processEvents() {
   const events = game.consumeEvents();
 
@@ -90,13 +100,13 @@ function processEvents() {
         audio.play(event.streak >= 3 ? 'streak' : 'perfect', { streak: event.streak });
         haptics.perfect(event.streak);
         if (event.regrew) {
-          ui.toast(`Growing x${event.streak}`);
+          comboToast(`Growing x${event.streak}`);
         } else if (event.streak >= 5) {
-          ui.toast(`Legendary x${event.streak}`);
+          comboToast(`Legendary x${event.streak}`);
         } else if (event.streak >= 3) {
-          ui.toast(`Amazing x${event.streak}`);
+          comboToast(`Amazing x${event.streak}`);
         } else {
-          ui.toast('Perfect');
+          comboToast('Perfect');
         }
       } else {
         audio.play(event.roughCut ? 'cut' : 'place');
@@ -106,7 +116,7 @@ function processEvents() {
           haptics.place();
         }
         if (event.streakBroken) {
-          ui.toast(`Streak banked x${event.longestStreak}`);
+          comboToast(`Streak banked x${event.longestStreak}`);
         }
       }
     } else if (event.type === 'newbest') {
@@ -168,6 +178,37 @@ ui.bind({
   onPreviewEffects() {
     audio.play('place');
   },
+  onSettingChange(name, enabled) {
+    if (name === 'vibration') {
+      haptics.setEnabled(enabled);
+      storage.setVibration(enabled);
+      // A short buzz confirms vibration is back on.
+      haptics.perfect(1);
+    } else if (name === 'screenShake') {
+      renderer.screenShake = enabled;
+      storage.setScreenShake(enabled);
+    } else if (name === 'comboPopups') {
+      renderer.comboPopups = enabled;
+      storage.setComboPopups(enabled);
+    } else if (name === 'reducedEffects') {
+      game.reducedEffects = enabled;
+      storage.setReducedEffects(enabled);
+    }
+  },
+  onToggleMute() {
+    audio.unlock();
+    const musicVolume = audio.getMusicVolume();
+    const effectsVolume = audio.getEffectsVolume();
+    if (musicVolume <= 0 && effectsVolume <= 0) {
+      const restored = storage.getVolumesBeforeMute();
+      audio.setMusicVolume(restored.musicVolume);
+      audio.setEffectsVolume(restored.effectsVolume);
+      return;
+    }
+    storage.setVolumesBeforeMute({ musicVolume, effectsVolume });
+    audio.setMusicVolume(0);
+    audio.setEffectsVolume(0);
+  },
   async onContinue() {
     ui.setContinueBusy(true);
     const rewarded = await monetization.showRewardedContinue();
@@ -210,7 +251,9 @@ window.addEventListener('keydown', (event) => {
       event.preventDefault();
       ui.hideOptions();
     }
-    if (event.code === 'Space' || event.code === 'Enter') {
+    // Let Space and Enter work the focused switch or button, but never drop a block.
+    const onControl = event.target instanceof Element && event.target.closest('input, button');
+    if ((event.code === 'Space' || event.code === 'Enter') && !onControl) {
       event.preventDefault();
     }
     return;
@@ -243,6 +286,12 @@ platform.bindLifecycle({
 ui.setAudioLevels({
   musicVolume: audio.getMusicVolume(),
   effectsVolume: audio.getEffectsVolume()
+});
+ui.setSettings({
+  vibration: haptics.isEnabled(),
+  screenShake: renderer.screenShake,
+  comboPopups: renderer.comboPopups,
+  reducedEffects: game.reducedEffects
 });
 ui.setRemoveAdsOwned(monetization.hasRemoveAds());
 ui.setRemoveAdsAvailable(monetization.canOfferRemoveAds());

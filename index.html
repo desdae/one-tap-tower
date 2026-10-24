@@ -37,6 +37,14 @@
             />
           </svg>
         </button>
+        <button id="mute-button" class="chip chip--icon" type="button" aria-label="Mute sound" aria-pressed="false">
+          <svg class="mute-icon mute-icon--on" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 9v6h4l5 5V4L7 9H3Zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.5 4.5 0 0 0 16.5 12ZM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54Z" fill="currentColor" />
+          </svg>
+          <svg class="mute-icon mute-icon--off" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 9v6h4l5 5V4L7 9H3Zm13.59 3 2.7-2.7-1.42-1.41-2.7 2.7-2.7-2.7-1.41 1.41 2.7 2.7-2.7 2.7 1.41 1.41 2.7-2.7 2.7 2.7 1.42-1.41-2.7-2.7Z" fill="currentColor" />
+          </svg>
+        </button>
       </div>
 
       <div id="toast" class="toast" aria-live="polite"></div>
@@ -46,7 +54,7 @@
           <div class="options-panel__header">
             <div>
               <p class="eyebrow">Options</p>
-              <h3 id="options-title">Audio</h3>
+              <h3 id="options-title">Settings</h3>
             </div>
             <button
               id="options-close-button"
@@ -70,6 +78,23 @@
               <strong id="effects-volume-value">90%</strong>
             </span>
             <input id="effects-volume" class="slider" type="range" min="0" max="100" step="1" />
+          </label>
+          <p class="options-panel__section">Feel</p>
+          <label class="toggle-field" for="vibration-toggle">
+            <span>Vibration</span>
+            <input id="vibration-toggle" class="toggle" type="checkbox" role="switch" data-setting="vibration" checked />
+          </label>
+          <label class="toggle-field" for="shake-toggle">
+            <span>Screen shake</span>
+            <input id="shake-toggle" class="toggle" type="checkbox" role="switch" data-setting="screenShake" checked />
+          </label>
+          <label class="toggle-field" for="combo-toggle">
+            <span>Combo pop-ups</span>
+            <input id="combo-toggle" class="toggle" type="checkbox" role="switch" data-setting="comboPopups" checked />
+          </label>
+          <label class="toggle-field" for="reduced-toggle">
+            <span>Reduce flashes &amp; particles</span>
+            <input id="reduced-toggle" class="toggle" type="checkbox" role="switch" data-setting="reducedEffects" />
           </label>
           <p id="app-version" class="options-panel__version"></p>
         </div>

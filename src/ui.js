@@ -30,6 +30,8 @@ export function createUI() {
     musicVolumeValue: document.querySelector('#music-volume-value'),
     effectsVolume: document.querySelector('#effects-volume'),
     effectsVolumeValue: document.querySelector('#effects-volume-value'),
+    settingToggles: Array.from(document.querySelectorAll('[data-setting]')),
+    muteButton: document.querySelector('#mute-button'),
     playButton: document.querySelector('#play-button'),
     restartButton: document.querySelector('#restart-button'),
     continueButton: document.querySelector('#continue-button'),
@@ -82,6 +84,12 @@ export function createUI() {
         actions.onEffectsVolumeChange(sliderValueToVolume(elements.effectsVolume));
       });
       elements.effectsVolume.addEventListener('change', actions.onPreviewEffects);
+      elements.settingToggles.forEach((toggle) => {
+        toggle.addEventListener('change', () => {
+          actions.onSettingChange(toggle.dataset.setting, toggle.checked);
+        });
+      });
+      elements.muteButton.addEventListener('click', actions.onToggleMute);
       elements.removeAdsButton.addEventListener('click', actions.onRemoveAds);
       elements.gameoverRemoveAds.addEventListener('click', actions.onRemoveAds);
     },
@@ -96,6 +104,18 @@ export function createUI() {
     setAudioLevels({ musicVolume, effectsVolume }) {
       setSliderValue(elements.musicVolume, elements.musicVolumeValue, musicVolume);
       setSliderValue(elements.effectsVolume, elements.effectsVolumeValue, effectsVolume);
+      const muted = musicVolume <= 0 && effectsVolume <= 0;
+      elements.muteButton.classList.toggle('chip--muted', muted);
+      elements.muteButton.setAttribute('aria-pressed', String(muted));
+      elements.muteButton.setAttribute('aria-label', muted ? 'Unmute sound' : 'Mute sound');
+    },
+
+    setSettings(settings) {
+      elements.settingToggles.forEach((toggle) => {
+        if (toggle.dataset.setting in settings) {
+          toggle.checked = Boolean(settings[toggle.dataset.setting]);
+        }
+      });
     },
 
     showMenu(bestScore, bestStreak) {
