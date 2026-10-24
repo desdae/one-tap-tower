@@ -2,6 +2,7 @@ import './styles.css';
 
 import { createAudioController } from './audio.js';
 import { GameEngine } from './game.js';
+import { createHaptics } from './haptics.js';
 import { createMonetization } from './monetization.js';
 import { createPlatform } from './platform.js';
 import { Renderer } from './renderer.js';
@@ -36,6 +37,7 @@ audio = createAudioController({
   }
 });
 const monetization = createMonetization({ platform, storage });
+const haptics = createHaptics({ platform });
 
 let lastFrame = performance.now();
 
@@ -85,8 +87,11 @@ function processEvents() {
 
     if (event.type === 'place') {
       if (event.perfect) {
-        audio.play(event.streak >= 3 ? 'streak' : 'perfect');
-        if (event.streak >= 5) {
+        audio.play(event.streak >= 3 ? 'streak' : 'perfect', { streak: event.streak });
+        haptics.perfect(event.streak);
+        if (event.regrew) {
+          ui.toast(`Growing x${event.streak}`);
+        } else if (event.streak >= 5) {
           ui.toast(`Legendary x${event.streak}`);
         } else if (event.streak >= 3) {
           ui.toast(`Amazing x${event.streak}`);
@@ -95,12 +100,21 @@ function processEvents() {
         }
       } else {
         audio.play(event.roughCut ? 'cut' : 'place');
+        if (event.roughCut) {
+          haptics.cut();
+        } else {
+          haptics.place();
+        }
         if (event.streakBroken) {
           ui.toast(`Streak banked x${event.longestStreak}`);
         }
       }
+    } else if (event.type === 'newbest') {
+      audio.play('best');
+      ui.toast('New best!');
     } else if (event.type === 'miss') {
       audio.play('miss');
+      haptics.miss();
     } else if (event.type === 'continue') {
       audio.play('continue');
       ui.toast('Second chance');

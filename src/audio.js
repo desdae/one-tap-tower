@@ -38,6 +38,13 @@ function createMusicElement(src) {
   return new Audio(src);
 }
 
+const PENTATONIC = [0, 2, 4, 7, 9];
+
+export function streakSemitones(streak) {
+  const step = Math.max(0, Math.min(10, Math.floor(streak) - 1));
+  return Math.floor(step / PENTATONIC.length) * 12 + PENTATONIC[step % PENTATONIC.length];
+}
+
 export function createAudioController({
   musicVolume = DEFAULT_MUSIC_VOLUME,
   effectsVolume = DEFAULT_EFFECTS_VOLUME,
@@ -113,7 +120,7 @@ export function createAudioController({
     syncMusicPlayback();
   }
 
-  function play(kind) {
+  function play(kind, { streak = 1 } = {}) {
     const ctx = getContext();
     const output = getEffectsOutput();
 
@@ -123,16 +130,21 @@ export function createAudioController({
 
     output.gain.value = currentEffectsVolume;
 
-    if (kind === 'perfect') {
-      createTone(ctx, output, 540, 0.09, 'triangle', 0.05, 820);
-      createTone(ctx, output, 760, 0.12, 'sine', 0.035, 1040);
+    if (kind === 'perfect' || kind === 'streak') {
+      // Each perfect in a row climbs one step of a major pentatonic scale.
+      const ratio = 2 ** (streakSemitones(streak) / 12);
+      createTone(ctx, output, 540 * ratio, 0.09, 'triangle', 0.05, 820 * ratio);
+      createTone(ctx, output, 760 * ratio, 0.12, 'sine', 0.035, 1040 * ratio);
+      if (kind === 'streak') {
+        createTone(ctx, output, 1080 * ratio, 0.14, 'triangle', 0.022, 1520 * ratio);
+      }
       return;
     }
 
-    if (kind === 'streak') {
-      createTone(ctx, output, 620, 0.08, 'triangle', 0.045, 920);
-      createTone(ctx, output, 860, 0.11, 'sine', 0.03, 1260);
-      createTone(ctx, output, 1080, 0.14, 'triangle', 0.022, 1520);
+    if (kind === 'best') {
+      createTone(ctx, output, 523, 0.1, 'triangle', 0.045, 523);
+      createTone(ctx, output, 659, 0.14, 'triangle', 0.04, 659);
+      createTone(ctx, output, 784, 0.2, 'triangle', 0.035, 1046);
       return;
     }
 

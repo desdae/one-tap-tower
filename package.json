@@ -14,7 +14,8 @@
     "cap:run": "npm run cap:sync && npx cap run android"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.1"
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/haptics": "^8.0.2"
   },
   "devDependencies": {
     "@capacitor/android": "^8.3.1",
