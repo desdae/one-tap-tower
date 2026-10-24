@@ -363,3 +363,10 @@ h2 {
     padding-top: calc(env(safe-area-inset-top, 0) + 112px);
   }
 }
+
+.options-panel__version {
+  margin: 12px 0 0;
+  font-size: 12px;
+  opacity: 0.6;
+  text-align: center;
+}
