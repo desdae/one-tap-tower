@@ -251,7 +251,9 @@ window.addEventListener('keydown', (event) => {
       event.preventDefault();
       ui.hideOptions();
     }
-    if (event.code === 'Space' || event.code === 'Enter') {
+    // Let Space and Enter work the focused switch or button, but never drop a block.
+    const onControl = event.target instanceof Element && event.target.closest('input, button');
+    if ((event.code === 'Space' || event.code === 'Enter') && !onControl) {
       event.preventDefault();
     }
     return;
