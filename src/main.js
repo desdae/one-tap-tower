@@ -232,6 +232,8 @@ ui.setAudioLevels({
 });
 ui.setRemoveAdsOwned(monetization.hasRemoveAds());
 ui.setRemoveAdsAvailable(monetization.canOfferRemoveAds());
+// Set by vite.config.js at build time: version name, build number, commit and build time.
+document.querySelector('#app-version').textContent = `Version ${typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev build'}`;
 ui.showMenu(game.bestScore, game.bestStreak);
 syncHud();
 resize();
