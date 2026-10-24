@@ -1,3 +1,5 @@
+import { liveRank } from './leaderboard.js';
+
 export const WORLD_WIDTH = 100;
 export const BLOCK_HEIGHT = 8;
 export const INITIAL_BLOCK_WIDTH = 44;
@@ -80,7 +82,7 @@ export function resolvePlacement(previousBlock, currentBlock, perfectTolerance) 
 }
 
 export class GameEngine {
-  constructor({ bestScore = 0, bestStreak = 0, reducedEffects = false } = {}) {
+  constructor({ bestScore = 0, bestStreak = 0, reducedEffects = false, topScores = [] } = {}) {
     this.worldWidth = WORLD_WIDTH;
     this.blockHeight = BLOCK_HEIGHT;
     this.initialBlockWidth = INITIAL_BLOCK_WIDTH;
@@ -108,6 +110,10 @@ export class GameEngine {
     this.hitStop = 0;
     this.runStartBest = bestScore;
     this.newBestReached = false;
+    // Scores of the player's top 10, highest first. Set from main.js after each run.
+    this.topScores = topScores;
+    this.runStartTop = [];
+    this.bestRankReached = 0;
     // Player setting: no freeze-frame, sparks or confetti. Scoring is unchanged.
     this.reducedEffects = reducedEffects;
   }
@@ -132,6 +138,8 @@ export class GameEngine {
     this.hitStop = 0;
     this.runStartBest = this.bestScore;
     this.newBestReached = false;
+    this.runStartTop = this.topScores.slice(0, 3);
+    this.bestRankReached = 0;
 
     this.blocks.push({
       x: this.worldWidth * 0.5,
@@ -300,6 +308,15 @@ export class GameEngine {
 
     if (newBest) {
       this.events.push({ type: 'newbest', score: this.score, previousBest: this.runStartBest });
+    }
+
+    // Passing the #3 or #2 score celebrates once each; #1 is the new best above.
+    // Waits until three scores exist so the first few runs don't pop up every time.
+    const rank = this.runStartTop.length >= 3 ? liveRank(this.runStartTop, this.score) : 0;
+    if (rank > 1 && (this.bestRankReached === 0 || rank < this.bestRankReached)) {
+      this.bestRankReached = rank;
+      this.spawnParticles(placedBlock.x, placedBlock.y + this.blockHeight * 2, 14, CONFETTI_COLORS, rank === 2 ? 1 : -1);
+      this.events.push({ type: 'toprank', rank, score: this.score });
     }
 
     this.inputCooldown = 0.08;

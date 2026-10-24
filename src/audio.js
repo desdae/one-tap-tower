@@ -148,6 +148,12 @@ export function createAudioController({
       return;
     }
 
+    if (kind === 'toprank') {
+      createTone(ctx, output, 440, 0.09, 'triangle', 0.04, 440);
+      createTone(ctx, output, 587, 0.16, 'triangle', 0.035, 880);
+      return;
+    }
+
     if (kind === 'place') {
       createTone(ctx, output, 350, 0.08, 'triangle', 0.04, 420);
       return;
