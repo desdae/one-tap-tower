@@ -4,6 +4,11 @@ const KEYS = {
   soundEnabled: 'oneTapTower.soundEnabled',
   musicVolume: 'oneTapTower.musicVolume',
   effectsVolume: 'oneTapTower.effectsVolume',
+  vibration: 'oneTapTower.vibration',
+  screenShake: 'oneTapTower.screenShake',
+  reducedEffects: 'oneTapTower.reducedEffects',
+  comboPopups: 'oneTapTower.comboPopups',
+  volumesBeforeMute: 'oneTapTower.volumesBeforeMute',
   removeAds: 'oneTapTower.removeAds'
 };
 
@@ -76,6 +81,47 @@ export function createStorage(storageArea = globalThis.window?.localStorage) {
         KEYS.effectsVolume,
         String(clampVolume(value, DEFAULT_EFFECTS_VOLUME))
       );
+    },
+    getVibration() {
+      return safeRead(storageArea, KEYS.vibration, '1') !== '0';
+    },
+    setVibration(enabled) {
+      safeWrite(storageArea, KEYS.vibration, enabled ? '1' : '0');
+    },
+    getScreenShake() {
+      return safeRead(storageArea, KEYS.screenShake, '1') !== '0';
+    },
+    setScreenShake(enabled) {
+      safeWrite(storageArea, KEYS.screenShake, enabled ? '1' : '0');
+    },
+    // Until the player picks, follow the phone's "remove animations" setting.
+    getReducedEffects(systemDefault = false) {
+      const raw = safeRead(storageArea, KEYS.reducedEffects, null);
+      return raw === null ? Boolean(systemDefault) : raw === '1';
+    },
+    setReducedEffects(enabled) {
+      safeWrite(storageArea, KEYS.reducedEffects, enabled ? '1' : '0');
+    },
+    getComboPopups() {
+      return safeRead(storageArea, KEYS.comboPopups, '1') !== '0';
+    },
+    setComboPopups(enabled) {
+      safeWrite(storageArea, KEYS.comboPopups, enabled ? '1' : '0');
+    },
+    getVolumesBeforeMute() {
+      const raw = safeRead(storageArea, KEYS.volumesBeforeMute, null);
+      const [music, effects] = raw === null ? [] : String(raw).split(',');
+      const restored = {
+        musicVolume: music ? clampVolume(music, DEFAULT_MUSIC_VOLUME) : DEFAULT_MUSIC_VOLUME,
+        effectsVolume: effects ? clampVolume(effects, DEFAULT_EFFECTS_VOLUME) : DEFAULT_EFFECTS_VOLUME
+      };
+      // Unmuting to silence would look broken, so fall back to the defaults.
+      return restored.musicVolume + restored.effectsVolume > 0
+        ? restored
+        : { musicVolume: DEFAULT_MUSIC_VOLUME, effectsVolume: DEFAULT_EFFECTS_VOLUME };
+    },
+    setVolumesBeforeMute({ musicVolume, effectsVolume }) {
+      safeWrite(storageArea, KEYS.volumesBeforeMute, `${musicVolume},${effectsVolume}`);
     },
     getRemoveAds() {
       return safeRead(storageArea, KEYS.removeAds, '0') === '1';

@@ -80,7 +80,7 @@ export function resolvePlacement(previousBlock, currentBlock, perfectTolerance) 
 }
 
 export class GameEngine {
-  constructor({ bestScore = 0, bestStreak = 0 } = {}) {
+  constructor({ bestScore = 0, bestStreak = 0, reducedEffects = false } = {}) {
     this.worldWidth = WORLD_WIDTH;
     this.blockHeight = BLOCK_HEIGHT;
     this.initialBlockWidth = INITIAL_BLOCK_WIDTH;
@@ -108,6 +108,8 @@ export class GameEngine {
     this.hitStop = 0;
     this.runStartBest = bestScore;
     this.newBestReached = false;
+    // Player setting: no freeze-frame, sparks or confetti. Scoring is unchanged.
+    this.reducedEffects = reducedEffects;
   }
 
   startRun() {
@@ -233,7 +235,7 @@ export class GameEngine {
       this.longestStreak = Math.max(this.longestStreak, this.perfectStreak);
       pointsAwarded = 1 + this.perfectStreak;
       regrew = this.perfectStreak >= REGROW_STREAK && this.regrow(placedBlock);
-      this.hitStop = PERFECT_HIT_STOP;
+      this.hitStop = this.reducedEffects ? 0 : PERFECT_HIT_STOP;
       this.spawnParticles(placedBlock.x - placedBlock.width * 0.5, placedBlock.y + this.blockHeight, 6, SPARK_COLORS, -1);
       this.spawnParticles(placedBlock.x + placedBlock.width * 0.5, placedBlock.y + this.blockHeight, 6, SPARK_COLORS, 1);
     } else {
@@ -342,6 +344,9 @@ export class GameEngine {
   }
 
   spawnParticles(x, y, count, colors, direction) {
+    if (this.reducedEffects) {
+      return;
+    }
     for (let i = 0; i < count; i += 1) {
       const spread = (i / Math.max(1, count - 1)) - 0.5;
       this.particles.push({
@@ -359,6 +364,9 @@ export class GameEngine {
   }
 
   spawnConfetti(x, y) {
+    if (this.reducedEffects) {
+      return;
+    }
     for (let i = 0; i < 36; i += 1) {
       const angle = (i / 36) * Math.PI * 2;
       const speed = 22 + (i % 5) * 6;

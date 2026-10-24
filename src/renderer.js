@@ -89,6 +89,9 @@ export class Renderer {
     this.width = 0;
     this.height = 0;
     this.scale = 1;
+    // Player settings, set from main.js.
+    this.screenShake = true;
+    this.comboPopups = true;
   }
 
   resize(width, height, pixelRatio = window.devicePixelRatio || 1) {
@@ -127,8 +130,9 @@ export class Renderer {
 
   render() {
     const { ctx } = this;
-    const shakeX = Math.sin(this.game.elapsed * 48) * this.game.shake * 6;
-    const shakeY = Math.cos(this.game.elapsed * 34) * this.game.shake * 3;
+    const shake = this.screenShake ? this.game.shake : 0;
+    const shakeX = Math.sin(this.game.elapsed * 48) * shake * 6;
+    const shakeY = Math.cos(this.game.elapsed * 34) * shake * 3;
 
     ctx.clearRect(0, 0, this.width, this.height);
     this.background.render(ctx, this.game.elapsed);
@@ -164,7 +168,7 @@ export class Renderer {
       const color = BLOCK_COLORS[block.colorIndex % BLOCK_COLORS.length];
       const sinceLanding = block.landedAt == null ? Infinity : this.game.elapsed - block.landedAt;
 
-      if (sinceLanding < LANDING_SQUASH_TIME) {
+      if (sinceLanding < LANDING_SQUASH_TIME && !this.game.reducedEffects) {
         // Squash on landing, anchored to the block's base, then spring back.
         const k = 1 - sinceLanding / LANDING_SQUASH_TIME;
         const squashedHeight = height * (1 - 0.18 * k);
@@ -256,7 +260,7 @@ export class Renderer {
   }
 
   drawStreakAura(shakeX, shakeY) {
-    if (this.game.perfectStreak < 2) {
+    if (this.game.perfectStreak < 2 || this.game.reducedEffects) {
       return;
     }
 
@@ -286,7 +290,7 @@ export class Renderer {
   }
 
   drawStreakBanner() {
-    if (this.game.perfectStreak < 2) {
+    if (this.game.perfectStreak < 2 || !this.comboPopups) {
       return;
     }
 

@@ -1,7 +1,9 @@
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 // Short buzzes per drop result. Native uses the Capacitor plugin; browsers fall back to navigator.vibrate.
-export function createHaptics({ platform, haptics = Haptics, nav = globalThis.navigator } = {}) {
+export function createHaptics({ platform, haptics = Haptics, nav = globalThis.navigator, enabled = true } = {}) {
+  let isEnabled = enabled;
+
   function vibrate(pattern) {
     if (nav && typeof nav.vibrate === 'function') {
       nav.vibrate(pattern);
@@ -9,6 +11,9 @@ export function createHaptics({ platform, haptics = Haptics, nav = globalThis.na
   }
 
   function run(nativeCall, pattern) {
+    if (!isEnabled) {
+      return;
+    }
     if (platform?.isNative) {
       Promise.resolve()
         .then(nativeCall)
@@ -19,6 +24,12 @@ export function createHaptics({ platform, haptics = Haptics, nav = globalThis.na
   }
 
   return {
+    setEnabled(value) {
+      isEnabled = Boolean(value);
+    },
+    isEnabled() {
+      return isEnabled;
+    },
     place() {
       run(() => haptics.impact({ style: ImpactStyle.Light }), 12);
     },
