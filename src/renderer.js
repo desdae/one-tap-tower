@@ -1,6 +1,7 @@
 import { BackgroundRenderer } from './background.js';
 
 const BLOCK_COLORS = ['#f4a261', '#f6bd60', '#84a59d', '#4d908e', '#577590', '#f28482'];
+const LANDING_SQUASH_TIME = 0.14;
 
 function roundedRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width * 0.25, height * 0.4);
@@ -137,6 +138,7 @@ export class Renderer {
     this.drawCurrentBlock(shakeX, shakeY);
     this.drawStreakAura(shakeX, shakeY);
     this.drawStreakBanner();
+    this.drawParticles(shakeX, shakeY);
     this.drawEffects(shakeX, shakeY);
   }
 
@@ -160,7 +162,36 @@ export class Renderer {
       const y = this.worldToScreenY(block.y, shakeY);
       const width = block.width * this.scale;
       const color = BLOCK_COLORS[block.colorIndex % BLOCK_COLORS.length];
-      drawBlock(ctx, x, y, width, height, color, block.isGolden);
+      const sinceLanding = block.landedAt == null ? Infinity : this.game.elapsed - block.landedAt;
+
+      if (sinceLanding < LANDING_SQUASH_TIME) {
+        // Squash on landing, anchored to the block's base, then spring back.
+        const k = 1 - sinceLanding / LANDING_SQUASH_TIME;
+        const squashedHeight = height * (1 - 0.18 * k);
+        const squashedWidth = width * (1 + 0.06 * k);
+        drawBlock(
+          ctx,
+          x - (squashedWidth - width) * 0.5,
+          y + (height - squashedHeight),
+          squashedWidth,
+          squashedHeight,
+          color,
+          block.isGolden
+        );
+      } else {
+        drawBlock(ctx, x, y, width, height, color, block.isGolden);
+      }
+
+      if (this.game.hitStop > 0 && i === this.game.blocks.length - 1) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = 'rgba(255, 244, 191, 0.9)';
+        ctx.shadowBlur = 16;
+        roundedRect(ctx, x - 1, y - 1, width + 2, height + 2, Math.max(4, height * 0.15));
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     for (let i = 0; i < this.game.fallingPieces.length; i += 1) {
@@ -276,6 +307,37 @@ export class Renderer {
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = 'rgba(209, 235, 255, 0.78)';
     ctx.fillText(`Next perfect +${this.game.perfectStreak + 2}`, centerX, y + 18);
+    ctx.restore();
+  }
+
+  drawParticles(shakeX, shakeY) {
+    const { ctx } = this;
+    const particles = this.game.particles;
+    if (!particles.length) {
+      return;
+    }
+
+    ctx.save();
+    for (let i = 0; i < particles.length; i += 1) {
+      const particle = particles[i];
+      const x = this.worldToScreenX(particle.x, shakeX);
+      const y = this.worldToScreenY(particle.y, shakeY) + this.game.blockHeight * this.scale;
+      const size = particle.size * this.scale;
+      ctx.globalAlpha = Math.max(0, 1 - particle.age / particle.ttl);
+      ctx.fillStyle = particle.color;
+
+      if (particle.confetti) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(particle.age * particle.spin);
+        ctx.fillRect(-size, -size * 0.5, size * 2, size);
+        ctx.restore();
+      } else {
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
   }
 

@@ -9,6 +9,12 @@ const WALL_BOUNCE_SPEED_MULTIPLIER = 1.2;
 const MAX_SPEED = BASE_SPEED * 10;
 const GOLDEN_BLOCK_INTERVAL = 10;
 const GOLDEN_BLOCK_MULTIPLIER = 3;
+// From the 3rd perfect in a row, each perfect widens the block back toward its starting width.
+const REGROW_STREAK = 3;
+const REGROW_AMOUNT = 2.5;
+const PERFECT_HIT_STOP = 0.05;
+const SPARK_COLORS = ['#fff4bf', '#ffd666', '#ffffff'];
+const CONFETTI_COLORS = ['#f4a261', '#f6bd60', '#84a59d', '#4d908e', '#f28482', '#a9e9ff', '#fff4bf'];
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -86,6 +92,7 @@ export class GameEngine {
     this.blocks = [];
     this.effects = [];
     this.fallingPieces = [];
+    this.particles = [];
     this.events = [];
 
     this.score = 0;
@@ -98,12 +105,16 @@ export class GameEngine {
     this.shake = 0;
     this.elapsed = 0;
     this.inputCooldown = 0;
+    this.hitStop = 0;
+    this.runStartBest = bestScore;
+    this.newBestReached = false;
   }
 
   startRun() {
     this.blocks.length = 0;
     this.effects.length = 0;
     this.fallingPieces.length = 0;
+    this.particles.length = 0;
     this.events.length = 0;
 
     this.score = 0;
@@ -116,6 +127,9 @@ export class GameEngine {
     this.continueUsed = false;
     this.spawnSide = -1;
     this.inputCooldown = 0;
+    this.hitStop = 0;
+    this.runStartBest = this.bestScore;
+    this.newBestReached = false;
 
     this.blocks.push({
       x: this.worldWidth * 0.5,
@@ -204,18 +218,24 @@ export class GameEngine {
       y: top.y + this.blockHeight,
       width: result.overlapWidth,
       colorIndex: this.blocks.length,
-      isGolden: this.currentBlock.isGolden
+      isGolden: this.currentBlock.isGolden,
+      landedAt: this.elapsed
     };
 
     this.blocks.push(placedBlock);
 
     const previousStreak = this.perfectStreak;
     let pointsAwarded = 1;
+    let regrew = false;
 
     if (result.perfect) {
       this.perfectStreak += 1;
       this.longestStreak = Math.max(this.longestStreak, this.perfectStreak);
       pointsAwarded = 1 + this.perfectStreak;
+      regrew = this.perfectStreak >= REGROW_STREAK && this.regrow(placedBlock);
+      this.hitStop = PERFECT_HIT_STOP;
+      this.spawnParticles(placedBlock.x - placedBlock.width * 0.5, placedBlock.y + this.blockHeight, 6, SPARK_COLORS, -1);
+      this.spawnParticles(placedBlock.x + placedBlock.width * 0.5, placedBlock.y + this.blockHeight, 6, SPARK_COLORS, 1);
     } else {
       this.perfectStreak = 0;
     }
@@ -227,12 +247,22 @@ export class GameEngine {
     this.score += pointsAwarded;
     this.updateRecords();
 
+    const newBest = !this.newBestReached && this.runStartBest > 0 && this.score > this.runStartBest;
+    if (newBest) {
+      this.newBestReached = true;
+      this.spawnConfetti(placedBlock.x, placedBlock.y + this.blockHeight * 2);
+    }
+
     if (result.cutPiece) {
       this.pushFallingPiece(
         { x: result.cutPiece.x, y: placedBlock.y, isGolden: this.currentBlock.isGolden },
         result.cutPiece.width,
         result.cutPiece.direction
       );
+      const cutEdge = result.cutPiece.direction > 0
+        ? placedBlock.x + placedBlock.width * 0.5
+        : placedBlock.x - placedBlock.width * 0.5;
+      this.spawnParticles(cutEdge, placedBlock.y + this.blockHeight * 0.5, 5, ['#ffe9c4', '#ffffff'], result.cutPiece.direction);
       this.shake = 0.5;
     } else {
       this.shake = 0.18;
@@ -262,8 +292,13 @@ export class GameEngine {
       streakBroken: !result.perfect && previousStreak > 0,
       longestStreak: this.longestStreak,
       pointsAwarded,
-      isGolden: placedBlock.isGolden
+      isGolden: placedBlock.isGolden,
+      regrew
     });
+
+    if (newBest) {
+      this.events.push({ type: 'newbest', score: this.score, previousBest: this.runStartBest });
+    }
 
     this.inputCooldown = 0.08;
     this.spawnNextBlock();
@@ -296,6 +331,53 @@ export class GameEngine {
     return true;
   }
 
+  regrow(block) {
+    const width = Math.min(this.initialBlockWidth, block.width + REGROW_AMOUNT);
+    if (width <= block.width) {
+      return false;
+    }
+    block.width = width;
+    block.x = clamp(block.x, width * 0.5, this.worldWidth - width * 0.5);
+    return true;
+  }
+
+  spawnParticles(x, y, count, colors, direction) {
+    for (let i = 0; i < count; i += 1) {
+      const spread = (i / Math.max(1, count - 1)) - 0.5;
+      this.particles.push({
+        x,
+        y,
+        vx: direction * (10 + (i % 3) * 6) + spread * 8,
+        vy: 18 + ((i * 7) % 5) * 5,
+        size: 1.2 + (i % 2) * 0.6,
+        color: colors[i % colors.length],
+        age: 0,
+        ttl: 0.45 + (i % 3) * 0.1,
+        gravity: 70
+      });
+    }
+  }
+
+  spawnConfetti(x, y) {
+    for (let i = 0; i < 36; i += 1) {
+      const angle = (i / 36) * Math.PI * 2;
+      const speed = 22 + (i % 5) * 6;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed + 25,
+        size: 1.6 + (i % 3) * 0.5,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        age: 0,
+        ttl: 1.3 + (i % 4) * 0.15,
+        gravity: 40,
+        spin: (i % 2 ? 1 : -1) * (4 + (i % 3)),
+        confetti: true
+      });
+    }
+  }
+
   updateRecords() {
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
@@ -320,10 +402,16 @@ export class GameEngine {
   }
 
   update(dt) {
-    this.elapsed += dt;
     this.inputCooldown = Math.max(0, this.inputCooldown - dt);
+    if (this.hitStop > 0) {
+      // Freeze the world for a beat on a perfect drop.
+      this.hitStop = Math.max(0, this.hitStop - dt);
+      return;
+    }
+    this.elapsed += dt;
     this.updateCurrentBlock(dt);
     this.updateFallingPieces(dt);
+    this.updateParticles(dt);
     this.updateEffects(dt);
     this.updateCamera(dt);
     this.shake = approach(this.shake, 0, dt * SHAKE_DECAY);
@@ -366,6 +454,20 @@ export class GameEngine {
 
       if (piece.y < this.cameraY - 28) {
         this.fallingPieces.splice(i, 1);
+      }
+    }
+  }
+
+  updateParticles(dt) {
+    for (let i = this.particles.length - 1; i >= 0; i -= 1) {
+      const particle = this.particles[i];
+      particle.age += dt;
+      particle.vy -= particle.gravity * dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+
+      if (particle.age >= particle.ttl) {
+        this.particles.splice(i, 1);
       }
     }
   }
