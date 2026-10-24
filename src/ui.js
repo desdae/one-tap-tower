@@ -25,6 +25,14 @@ export function createUI() {
     gameoverBest: document.querySelector('#gameover-best'),
     gameoverStreak: document.querySelector('#gameover-streak'),
     gameoverBestStreak: document.querySelector('#gameover-best-streak'),
+    gameoverRank: document.querySelector('#gameover-rank'),
+    scores: document.querySelector('#scores-screen'),
+    scoresList: document.querySelector('#scores-list'),
+    scoresEmpty: document.querySelector('#scores-empty'),
+    scoresCloseButton: document.querySelector('#scores-close-button'),
+    menuScoresButton: document.querySelector('#menu-scores-button'),
+    gameoverScoresButton: document.querySelector('#gameover-scores-button'),
+    resetScoresButton: document.querySelector('#reset-scores-button'),
     options: document.querySelector('#options-screen'),
     musicVolume: document.querySelector('#music-volume'),
     musicVolumeValue: document.querySelector('#music-volume-value'),
@@ -90,6 +98,15 @@ export function createUI() {
         });
       });
       elements.muteButton.addEventListener('click', actions.onToggleMute);
+      elements.menuScoresButton.addEventListener('click', actions.onOpenScores);
+      elements.gameoverScoresButton.addEventListener('click', actions.onOpenScores);
+      elements.scoresCloseButton.addEventListener('click', actions.onCloseScores);
+      elements.scores.addEventListener('click', (event) => {
+        if (event.target === elements.scores) {
+          actions.onCloseScores();
+        }
+      });
+      elements.resetScoresButton.addEventListener('click', actions.onResetScores);
       elements.removeAdsButton.addEventListener('click', actions.onRemoveAds);
       elements.gameoverRemoveAds.addEventListener('click', actions.onRemoveAds);
     },
@@ -130,7 +147,9 @@ export function createUI() {
       setHidden(elements.gameover, true);
     },
 
-    showGameOver({ score, bestScore, longestStreak, bestStreak, canContinue }) {
+    showGameOver({ score, bestScore, longestStreak, bestStreak, canContinue, rank = 0 }) {
+      elements.gameoverRank.hidden = rank === 0;
+      elements.gameoverRank.textContent = rank === 1 ? 'New #1 in your top 10!' : `#${rank} of your top 10`;
       elements.gameoverScore.textContent = `Score: ${score}`;
       elements.gameoverBest.textContent = `Best score: ${bestScore}`;
       elements.gameoverStreak.textContent = `Longest streak: ${longestStreak}`;
@@ -152,6 +171,40 @@ export function createUI() {
 
     isOptionsOpen() {
       return elements.options.classList.contains('options-screen--active');
+    },
+
+    showScores(list, currentId = null) {
+      elements.scoresList.replaceChildren(
+        ...list.map((entry, index) => {
+          const row = document.createElement('li');
+          row.classList.toggle('scores-list__row--current', currentId != null && entry.id === currentId);
+          const rank = document.createElement('span');
+          rank.className = 'scores-list__rank';
+          rank.textContent = `#${index + 1}`;
+          const score = document.createElement('span');
+          score.className = 'scores-list__score';
+          score.textContent = String(entry.score);
+          const meta = document.createElement('span');
+          meta.className = 'scores-list__meta';
+          meta.textContent = [entry.streak > 0 ? `streak x${entry.streak}` : '', entry.date ?? '']
+            .filter(Boolean)
+            .join(' · ');
+          row.append(rank, score, meta);
+          return row;
+        })
+      );
+      elements.scoresEmpty.hidden = list.length > 0;
+      elements.scores.classList.add('options-screen--active');
+      elements.scores.setAttribute('aria-hidden', 'false');
+    },
+
+    hideScores() {
+      elements.scores.classList.remove('options-screen--active');
+      elements.scores.setAttribute('aria-hidden', 'true');
+    },
+
+    isScoresOpen() {
+      return elements.scores.classList.contains('options-screen--active');
     },
 
     setContinueBusy(isBusy) {

@@ -9,7 +9,8 @@ const KEYS = {
   reducedEffects: 'oneTapTower.reducedEffects',
   comboPopups: 'oneTapTower.comboPopups',
   volumesBeforeMute: 'oneTapTower.volumesBeforeMute',
-  removeAds: 'oneTapTower.removeAds'
+  removeAds: 'oneTapTower.removeAds',
+  topScores: 'oneTapTower.topScores'
 };
 
 const DEFAULT_MUSIC_VOLUME = 0.35;
@@ -51,6 +52,8 @@ function getStoredVolume(storageArea, key, fallback) {
   }
   return clampVolume(raw, fallback);
 }
+
+import { normalizeTopScores } from './leaderboard.js';
 
 export function createStorage(storageArea = globalThis.window?.localStorage) {
   return {
@@ -122,6 +125,26 @@ export function createStorage(storageArea = globalThis.window?.localStorage) {
     },
     setVolumesBeforeMute({ musicVolume, effectsVolume }) {
       safeWrite(storageArea, KEYS.volumesBeforeMute, `${musicVolume},${effectsVolume}`);
+    },
+    getTopScores() {
+      let raw = [];
+      try {
+        raw = JSON.parse(safeRead(storageArea, KEYS.topScores, '[]'));
+      } catch {
+        raw = [];
+      }
+      return normalizeTopScores(raw, {
+        bestScore: this.getBestScore(),
+        bestStreak: this.getBestStreak()
+      });
+    },
+    setTopScores(list) {
+      safeWrite(storageArea, KEYS.topScores, JSON.stringify(list));
+    },
+    resetScores() {
+      safeWrite(storageArea, KEYS.topScores, '[]');
+      safeWrite(storageArea, KEYS.bestScore, '0');
+      safeWrite(storageArea, KEYS.bestStreak, '0');
     },
     getRemoveAds() {
       return safeRead(storageArea, KEYS.removeAds, '0') === '1';

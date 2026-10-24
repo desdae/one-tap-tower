@@ -440,3 +440,67 @@ h2 {
   opacity: 0.6;
   text-align: center;
 }
+
+.options-panel__reset {
+  display: block;
+  margin: 22px auto 0;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: transparent;
+  cursor: pointer;
+}
+
+.scores-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scores-list li {
+  display: grid;
+  grid-template-columns: 2.2em 1fr auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.scores-list li:nth-child(-n + 3) .scores-list__rank {
+  color: #ffd88e;
+}
+
+.scores-list li.scores-list__row--current {
+  background: rgba(255, 216, 142, 0.18);
+  outline: 1px solid rgba(255, 216, 142, 0.6);
+}
+
+.scores-list__rank {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.scores-list__score {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.scores-list__meta {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+}
+
+.scores-empty {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.gameover-rank {
+  margin: 10px auto 0;
+  font-weight: 700;
+  color: #ffd88e;
+}

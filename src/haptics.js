@@ -42,6 +42,9 @@ export function createHaptics({ platform, haptics = Haptics, nav = globalThis.na
         streak >= 3 ? [18, 40, 24] : 26
       );
     },
+    milestone() {
+      run(() => haptics.notification({ type: NotificationType.Success }), [20, 50, 20, 50, 40]);
+    },
     miss() {
       run(() => haptics.notification({ type: NotificationType.Error }), [40, 30, 60]);
     }

@@ -2,6 +2,7 @@ import './styles.css';
 
 import { createAudioController } from './audio.js';
 import { GameEngine } from './game.js';
+import { insertScore } from './leaderboard.js';
 import { createHaptics } from './haptics.js';
 import { createMonetization } from './monetization.js';
 import { createPlatform } from './platform.js';
@@ -12,9 +13,11 @@ import { createUI } from './ui.js';
 const storage = createStorage();
 const platform = createPlatform();
 const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+let topScores = storage.getTopScores();
 const game = new GameEngine({
   bestScore: storage.getBestScore(),
   bestStreak: storage.getBestStreak(),
+  topScores: topScores.map((entry) => entry.score),
   reducedEffects: storage.getReducedEffects(prefersReducedMotion)
 });
 const renderer = new Renderer(document.querySelector('#game-canvas'), game);
@@ -44,6 +47,24 @@ const monetization = createMonetization({ platform, storage });
 const haptics = createHaptics({ platform, enabled: storage.getVibration() });
 
 let lastFrame = performance.now();
+let runId = null;
+let lastRunId = null;
+
+function localDate() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+// Saves the run in the top 10. A continued run updates its own entry.
+function recordRun(score, streak) {
+  const result = insertScore(topScores, { id: runId, score, streak, date: localDate() });
+  topScores = result.list;
+  game.topScores = topScores.map((entry) => entry.score);
+  storage.setTopScores(topScores);
+  lastRunId = runId;
+  return result.rank;
+}
 
 function resize() {
   renderer.resize(window.innerWidth, window.innerHeight);
@@ -64,6 +85,8 @@ function persistRecords() {
 
 function beginRun() {
   ui.hideOptions();
+  ui.hideScores();
+  runId = String(Date.now());
   game.startRun();
   persistRecords();
   syncHud();
@@ -121,7 +144,12 @@ function processEvents() {
       }
     } else if (event.type === 'newbest') {
       audio.play('best');
-      ui.toast('New best!');
+      haptics.milestone();
+      comboToast('New best!');
+    } else if (event.type === 'toprank') {
+      audio.play('toprank');
+      haptics.milestone();
+      comboToast(event.rank === 3 ? 'Top 3!' : '#2 all-time!');
     } else if (event.type === 'miss') {
       audio.play('miss');
       haptics.miss();
@@ -129,7 +157,9 @@ function processEvents() {
       audio.play('continue');
       ui.toast('Second chance');
     } else if (event.type === 'gameover') {
+      const rank = recordRun(event.score, event.longestStreak);
       ui.showGameOver({
+        rank,
         score: event.score,
         bestScore: event.bestScore,
         longestStreak: event.longestStreak,
@@ -166,6 +196,27 @@ ui.bind({
   },
   onCloseOptions() {
     ui.hideOptions();
+  },
+  onOpenScores() {
+    ui.showScores(topScores, game.state === 'gameover' ? lastRunId : null);
+  },
+  onCloseScores() {
+    ui.hideScores();
+  },
+  onResetScores() {
+    if (!window.confirm('Reset your best score, best streak and top 10? This cannot be undone.')) {
+      return;
+    }
+    storage.resetScores();
+    topScores = [];
+    game.topScores = [];
+    game.bestScore = 0;
+    game.bestStreak = 0;
+    syncHud();
+    if (game.state === 'menu') {
+      ui.showMenu(0, 0);
+    }
+    ui.toast('Scores reset');
   },
   onMusicVolumeChange(value) {
     audio.unlock();
@@ -246,16 +297,24 @@ document.querySelector('#game-canvas').addEventListener('pointerdown', (event) =
 });
 
 window.addEventListener('keydown', (event) => {
-  if (ui.isOptionsOpen()) {
+  if (ui.isOptionsOpen() || ui.isScoresOpen()) {
     if (event.code === 'Escape') {
       event.preventDefault();
       ui.hideOptions();
+      ui.hideScores();
     }
     // Let Space and Enter work the focused switch or button, but never drop a block.
     const onControl = event.target instanceof Element && event.target.closest('input, button');
     if ((event.code === 'Space' || event.code === 'Enter') && !onControl) {
       event.preventDefault();
     }
+    return;
+  }
+
+  // A focused, visible button (Top 10, Remove Ads...) handles its own Space/Enter.
+  // Buttons on hidden screens keep focus after a click, so they don't count.
+  const focusedButton = event.target instanceof HTMLElement ? event.target.closest('button') : null;
+  if (focusedButton && focusedButton.offsetParent !== null) {
     return;
   }
 
