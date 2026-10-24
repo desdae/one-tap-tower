@@ -311,6 +311,13 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
+  // A focused, visible button (Top 10, Remove Ads...) handles its own Space/Enter.
+  // Buttons on hidden screens keep focus after a click, so they don't count.
+  const focusedButton = event.target instanceof HTMLElement ? event.target.closest('button') : null;
+  if (focusedButton && focusedButton.offsetParent !== null) {
+    return;
+  }
+
   if (event.code === 'Space' || event.code === 'Enter') {
     event.preventDefault();
     if (game.state === 'menu') {
