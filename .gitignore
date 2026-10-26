@@ -9,3 +9,20 @@ android/build/
 android/local.properties
 
 coverage/
+
+# Secrets: signing keys, passwords and service accounts live in GitHub secrets only
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.base64.txt
+keystore.properties
+key.properties
+.env
+.env.*
+*service-account*.json
+*service_account*.json
+play-*.json
+google-services.json
