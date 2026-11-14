@@ -1,0 +1,22 @@
+name: Play production release
+
+# Runs scripts/play_release.py with the request in play/request.json.
+# mode "inspect" changes nothing; mode "release" promotes the newest closed-test build to production.
+on:
+  push:
+    branches: ['claude/**']
+    paths: ['play/request.json']
+  workflow_dispatch:
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install google-auth==2.35.0 requests==2.32.3
+      - run: python scripts/play_release.py
+        env:
+          PLAY_SA_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
