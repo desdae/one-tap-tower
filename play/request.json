@@ -1,6 +1,7 @@
 {
-  "mode": "inspect",
-  "run": 2,
+  "mode": "fix",
+  "run": 3,
   "from_track": "alpha",
-  "release_notes_en_US": "First release of One Tap Tower. Tap once to drop each block, keep the overlap and climb as high as you can. Three perfect drops in a row grow your block back. Your Top 10 runs, best score and best streak stay on your phone. Sound, vibration and quick mute in Settings. No accounts, no tracking."
+  "release_notes_en_US": "First release of One Tap Tower. Tap once to drop each block, keep the overlap and climb as high as you can. Three perfect drops in a row grow your block back. Your Top 10 runs, best score and best streak stay on your phone. Sound, vibration and quick mute in Settings. No accounts, no tracking.",
+  "listing_en_GB_fullDescription": "One Tap Tower is a simple stacking game you play with one finger.\n\nA block slides back and forth above your tower. Tap to drop it. Whatever hangs over the edge gets sliced off, so your next block is smaller. Miss completely and the run is over.\n\nLand a block exactly on top of the last one and it keeps its full width. Chain perfect drops together to build a streak: every perfect drop in a row is worth more points than the last, and from the third one in a row your block starts growing back.\n\nEvery 10th block is golden and scores triple. Every 10 blocks the slider speeds up, so the higher you go, the sharper your timing has to be.\n\n• One-tap controls, playable with one hand\n• Perfect-drop streaks for bonus points\n• Golden blocks worth triple points\n• Speed rises as your tower grows\n• Your Top 10 runs, best score and best streak are saved on your phone\n• Separate music and sound effect volume, plus vibration, screen shake and reduced-effects settings\n• Plays offline, no account needed\n• No ads, no tracking\n\nHow high can you build?"
 }

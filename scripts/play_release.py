@@ -80,6 +80,39 @@ def main():
         print("\ninspect done, edit deleted, nothing changed")
         return
 
+    if mode == "fix":
+        prod = next((t for t in tracks.get("tracks", []) if t["track"] == "production"), None)
+        if not prod or not newest_release(prod):
+            sys.exit("no production release to fix")
+        prel = newest_release(prod)
+        notes = {n["language"]: n["text"] for n in prel.get("releaseNotes", [])}
+        base = notes.get("en-US") or notes.get("en-GB")
+        for lang in ("en-GB", "en-US"):
+            notes.setdefault(lang, base)
+        prel["releaseNotes"] = [{"language": k, "text": v} for k, v in notes.items()]
+        body = {"track": "production", "releases": [prel]}
+        show("production track request", body)
+        if call(s, "PUT", f"/edits/{eid}/tracks/production", json=body) is None:
+            call(s, "DELETE", f"/edits/{eid}"); sys.exit(1)
+        if req.get("listing_en_GB_fullDescription"):
+            lst = call(s, "PATCH", f"/edits/{eid}/listings/en-GB",
+                       json={"fullDescription": req["listing_en_GB_fullDescription"]})
+            if lst is None:
+                call(s, "DELETE", f"/edits/{eid}"); sys.exit(1)
+            show("listing en-GB after patch", lst)
+        if call(s, "POST", f"/edits/{eid}:validate") is None:
+            call(s, "DELETE", f"/edits/{eid}"); sys.exit(1)
+        done = call(s, "POST", f"/edits/{eid}:commit")
+        if done is None:
+            print("commit refused; committing with changesNotSentForReview=true (owner sends for review in Console)")
+            done = call(s, "POST", f"/edits/{eid}:commit", params={"changesNotSentForReview": "true"})
+            if done is None:
+                call(s, "DELETE", f"/edits/{eid}"); sys.exit(1)
+            show("committed, NOT sent for review", done)
+            return
+        show("committed and sent for review", done)
+        return
+
     if mode != "release":
         sys.exit(f"unknown mode {mode}")
     if not rel:
