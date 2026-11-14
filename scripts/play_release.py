@@ -36,7 +36,7 @@ def call(s, method, path, **kw):
 
 def show(label, data):
     print(f"\n=== {label} ===")
-    print(json.dumps(data, indent=2, ensure_ascii=False)[:6000])
+    print(json.dumps(data, ensure_ascii=False)[:6000].replace("{", "(").replace("}", ")"))
 
 
 def newest_release(track):
@@ -71,7 +71,10 @@ def main():
                 counts[kind] = len(imgs.get("images", []))
             show(f"images {lang}", counts)
         for t in ["production", req["from_track"]]:
-            show(f"country availability {t}", call(s, "GET", f"/edits/{eid}/countryAvailability/{t}"))
+            ca = call(s, "GET", f"/edits/{eid}/countryAvailability/{t}") or {}
+            codes = [c["countryCode"] for c in ca.get("countries", [])]
+            print(f"\n=== country availability {t} === restOfWorld={ca.get('restOfWorld')} count={len(codes)} "
+                  f"LV={'LV' in codes} US={'US' in codes}")
         show("testers " + req["from_track"], call(s, "GET", f"/edits/{eid}/testers/{req['from_track']}"))
         call(s, "DELETE", f"/edits/{eid}")
         print("\ninspect done, edit deleted, nothing changed")
