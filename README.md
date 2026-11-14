@@ -61,3 +61,10 @@ GitHub Actions (`.github/workflows/android.yml`) builds a release `.aab` on ever
 Signing uses four repository secrets: `ANDROID_KEYSTORE_BASE64` (the upload keystore, base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Without them the bundle is built unsigned, which Play rejects. Pull request builds are always unsigned and only check that the app builds.
 
 Privacy policy for the store listing: [PRIVACY.md](PRIVACY.md).
+
+## Play releases through the API
+
+`scripts/play_release.py` (workflow "Play production release") reads `play/request.json`: `inspect` prints tracks,
+listing, images and countries and changes nothing; `fix` adds en-GB notes to the production release and can patch the
+en-GB description; `release` promotes the newest `from_track` build to production. It runs on a push to a `claude/**`
+branch that changes `play/request.json`. Committing an edit sends the changes to Google for review.
